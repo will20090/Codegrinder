@@ -39,6 +39,22 @@
             padding: 30px;
         }
 
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #c62828;
+        }
+
         .cryptogram-display {
             background: #f8f9fa;
             border: 2px solid #e9ecef;
@@ -112,6 +128,13 @@
 
         button:active {
             transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         button.danger {
@@ -228,6 +251,16 @@
             color: #95a5a6;
         }
 
+        .file-stats {
+            background: #f0f8ff;
+            border: 2px solid #4169e1;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -268,77 +301,96 @@
         </div>
         
         <div class="content">
-            <div class="puzzle-options">
-                <div class="option-group">
-                    <h4>Puzzle Type</h4>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="puzzleType" value="aristocrat" checked>
-                            Aristocrat
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="puzzleType" value="patristocrat">
-                            Patristocrat
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="puzzleType" value="xenocrypt">
-                            Xenocrypt
-                        </label>
+            <div id="loadingMessage" class="loading">
+                📂 Loading quotes and keywords from files...
+            </div>
+
+            <div id="errorMessage" class="error" style="display: none;">
+                ❌ Error loading files. Please check that the following files exist:
+                <ul>
+                    <li><strong>quotes.json</strong> - English quotes in JSON format</li>
+                    <li><strong>spanishQuotes.txt</strong> - Spanish quotes (one per line)</li>
+                    <li><strong>words.txt</strong> - Keywords (one per line)</li>
+                </ul>
+            </div>
+
+            <div id="fileStats" class="file-stats" style="display: none;">
+                📊 Loaded: <span id="statsText"></span>
+            </div>
+
+            <div id="gameContent" style="display: none;">
+                <div class="puzzle-options">
+                    <div class="option-group">
+                        <h4>Puzzle Type</h4>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="puzzleType" value="aristocrat" checked>
+                                Aristocrat
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="puzzleType" value="patristocrat">
+                                Patristocrat
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="puzzleType" value="xenocrypt">
+                                Xenocrypt
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <h4>Cipher Mapping</h4>
+                        <div class="radio-group">
+                            <label class="radio-item">
+                                <input type="radio" name="cipherType" value="random" checked>
+                                Random
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="cipherType" value="k1">
+                                K1 (Keyword)
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="cipherType" value="k2">
+                                K2 (Keyword)
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="cipherType" value="k3">
+                                K3 (Keyword)
+                            </label>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="option-group">
-                    <h4>Cipher Mapping</h4>
-                    <div class="radio-group">
-                        <label class="radio-item">
-                            <input type="radio" name="cipherType" value="random" checked>
-                            Random
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="cipherType" value="k1">
-                            K1 (Keyword)
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="cipherType" value="k2">
-                            K2 (Keyword)
-                        </label>
-                        <label class="radio-item">
-                            <input type="radio" name="cipherType" value="k3">
-                            K3 (Keyword)
-                        </label>
+
+                <div class="cryptogram-display" id="cryptogramDisplay">
+                    Ready to generate puzzle...
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Substitution (e.g., X E):</label>
+                        <input type="text" id="substitutionInput" placeholder="X E" maxlength="3">
+                        <button onclick="processSubstitution()">Apply</button>
+                    </div>
+                    <button onclick="checkSolution()" class="success">Check Solution</button>
+                    <button onclick="loadNewPuzzle()">New Puzzle</button>
+                    <button onclick="showHint()">First Word Hint</button>
+                    <button onclick="guessKeyword()">Guess Keyword</button>
+                    <button onclick="revealAnswer()" class="danger">Reveal Answer</button>
+                </div>
+
+                <div class="frequency-section">
+                    <h3>Letter Frequency & Substitution</h3>
+                    <div class="frequency-table" id="frequencyTable">
+                        <!-- Frequency display will be generated here -->
+                    </div>
+                    <div class="input-row" id="inputRow">
+                        <!-- Input fields will be generated here -->
                     </div>
                 </div>
-            </div>
 
-            <div class="cryptogram-display" id="cryptogramDisplay">
-                Loading puzzle...
-            </div>
-
-            <div class="controls">
-                <div class="control-group">
-                    <label>Substitution (e.g., X E):</label>
-                    <input type="text" id="substitutionInput" placeholder="X E" maxlength="3">
-                    <button onclick="processSubstitution()">Apply</button>
+                <div class="status" id="statusLabel">
+                    Click "New Puzzle" to start solving!
                 </div>
-                <button onclick="checkSolution()" class="success">Check Solution</button>
-                <button onclick="loadNewPuzzle()">New Puzzle</button>
-                <button onclick="showHint()">First Word Hint</button>
-                <button onclick="guessKeyword()">Guess Keyword</button>
-                <button onclick="revealAnswer()" class="danger">Reveal Answer</button>
-            </div>
-
-            <div class="frequency-section">
-                <h3>Letter Frequency & Substitution</h3>
-                <div class="frequency-table" id="frequencyTable">
-                    <!-- Frequency display will be generated here -->
-                </div>
-                <div class="input-row" id="inputRow">
-                    <!-- Input fields will be generated here -->
-                </div>
-            </div>
-
-            <div class="status" id="statusLabel">
-                Enter a substitution (e.g., X E) in the field above or type directly in the frequency table
             </div>
         </div>
     </div>
@@ -355,36 +407,150 @@
         let mappingType = 'random';
         let firstWord = '';
 
-        // Sample quotes (you can expand this)
-        const englishQuotes = [
-            "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-            "TO BE OR NOT TO BE THAT IS THE QUESTION",
-            "ALL THE WORLD IS A STAGE AND ALL THE MEN AND WOMEN MERELY PLAYERS",
-            "LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS",
-            "THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO",
-            "INNOVATION DISTINGUISHES BETWEEN A LEADER AND A FOLLOWER",
-            "SUCCESS IS NOT FINAL FAILURE IS NOT FATAL IT IS THE COURAGE TO CONTINUE THAT COUNTS",
-            "THE FUTURE BELONGS TO THOSE WHO BELIEVE IN THE BEAUTY OF THEIR DREAMS"
-        ];
+        // Data loaded from files
+        let englishQuotes = [];
+        let spanishQuotes = [];
+        let keywords = [];
+        let filesLoaded = false;
 
-        const spanishQuotes = [
-            "EL ZORRO MARRÓN RÁPIDO SALTA SOBRE EL PERRO PEREZOSO",
-            "LA VIDA ES LO QUE PASA MIENTRAS ESTÁS OCUPADO HACIENDO OTROS PLANES",
-            "EL ÚNICO MODO DE HACER UN GRAN TRABAJO ES AMAR LO QUE HACES",
-            "LA INNOVACIÓN DISTINGUE ENTRE UN LÍDER Y UN SEGUIDOR",
-            "EL FUTURO PERTENECE A AQUELLOS QUE CREEN EN LA BELLEZA DE SUS SUEÑOS"
-        ];
+        // File loading functions
+        async function loadFiles() {
+            try {
+                updateLoadingMessage('Loading English quotes from quotes.json...');
+                await loadEnglishQuotes();
+                
+                updateLoadingMessage('Loading Spanish quotes from spanishQuotes.txt...');
+                await loadSpanishQuotes();
+                
+                updateLoadingMessage('Loading keywords from words.txt...');
+                await loadKeywords();
+                
+                filesLoaded = true;
+                showGameContent();
+                updateFileStats();
+                
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showError();
+            }
+        }
 
-        const keywords = [
-            "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", "CODING", "CRYPTO",
-            "SOLVER", "BREAK", "DECODE", "REVEAL", "ANSWER", "CLUES", "LETTERS", "ALPHABET"
-        ];
+        async function loadEnglishQuotes() {
+            try {
+                const response = await fetch('quotes.json');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                
+                // Handle different JSON structures
+                if (Array.isArray(data)) {
+                    englishQuotes = data.map(item => 
+                        typeof item === 'string' ? item.toUpperCase() : 
+                        (item.quote || item.text || item.content || '').toUpperCase()
+                    ).filter(quote => quote.length > 0);
+                } else if (data.quotes && Array.isArray(data.quotes)) {
+                    englishQuotes = data.quotes.map(item => 
+                        typeof item === 'string' ? item.toUpperCase() : 
+                        (item.quote || item.text || item.content || '').toUpperCase()
+                    ).filter(quote => quote.length > 0);
+                } else {
+                    throw new Error('Invalid JSON structure');
+                }
+                
+                if (englishQuotes.length === 0) {
+                    throw new Error('No valid quotes found in quotes.json');
+                }
+                
+            } catch (error) {
+                // Fallback quotes if file fails to load
+                console.warn('Failed to load quotes.json, using fallback quotes');
+                englishQuotes = [
+                    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    "TO BE OR NOT TO BE THAT IS THE QUESTION",
+                    "ALL THE WORLD IS A STAGE AND ALL THE MEN AND WOMEN MERELY PLAYERS",
+                    "LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS",
+                    "THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO"
+                ];
+            }
+        }
+
+        async function loadSpanishQuotes() {
+            try {
+                const response = await fetch('spanishQuotes.txt');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const text = await response.text();
+                spanishQuotes = text.split('\n')
+                    .map(line => line.trim().toUpperCase())
+                    .filter(line => line.length > 0);
+                
+                if (spanishQuotes.length === 0) {
+                    throw new Error('No quotes found in spanishQuotes.txt');
+                }
+                
+            } catch (error) {
+                // Fallback Spanish quotes if file fails to load
+                console.warn('Failed to load spanishQuotes.txt, using fallback quotes');
+                spanishQuotes = [
+                    "EL ZORRO MARRÓN RÁPIDO SALTA SOBRE EL PERRO PEREZOSO",
+                    "LA VIDA ES LO QUE PASA MIENTRAS ESTÁS OCUPADO HACIENDO OTROS PLANES",
+                    "EL ÚNICO MODO DE HACER UN GRAN TRABAJO ES AMAR LO QUE HACES"
+                ];
+            }
+        }
+
+        async function loadKeywords() {
+            try {
+                const response = await fetch('words.txt');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const text = await response.text();
+                keywords = text.split('\n')
+                    .map(line => line.trim().toUpperCase())
+                    .filter(line => line.length > 0 && /^[A-Z]+$/.test(line));
+                
+                if (keywords.length === 0) {
+                    throw new Error('No keywords found in words.txt');
+                }
+                
+            } catch (error) {
+                // Fallback keywords if file fails to load
+                console.warn('Failed to load words.txt, using fallback keywords');
+                keywords = [
+                    "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", 
+                    "CODING", "CRYPTO", "SOLVER", "BREAK", "DECODE", "REVEAL"
+                ];
+            }
+        }
+
+        function updateLoadingMessage(message) {
+            document.getElementById('loadingMessage').textContent = message;
+        }
+
+        function showError() {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        function showGameContent() {
+            document.getElementById('loadingMessage').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('fileStats').style.display = 'block';
+            document.getElementById('gameContent').style.display = 'block';
+        }
+
+        function updateFileStats() {
+            const statsText = `${englishQuotes.length} English quotes, ${spanishQuotes.length} Spanish quotes, ${keywords.length} keywords`;
+            document.getElementById('statsText').textContent = statsText;
+        }
 
         // Initialize the game
         function init() {
-            setupEventHandlers();
-            createFrequencyTable();
-            loadNewPuzzle();
+            loadFiles().then(() => {
+                setupEventHandlers();
+                createFrequencyTable();
+                loadNewPuzzle();
+            });
         }
 
         function setupEventHandlers() {
@@ -465,10 +631,17 @@
         }
 
         function loadNewPuzzle() {
+            if (!filesLoaded) return;
+            
             guesses = {};
             
             // Select quote based on puzzle type
             const quotes = isXenocrypt ? spanishQuotes : englishQuotes;
+            if (quotes.length === 0) {
+                updateStatus('No quotes available for this puzzle type');
+                return;
+            }
+            
             currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
             
             // Get first word for hints
@@ -480,6 +653,10 @@
                 cipher = generateRandomCipher();
                 currentKeyword = '';
             } else {
+                if (keywords.length === 0) {
+                    updateStatus('No keywords available for cipher generation');
+                    return;
+                }
                 currentKeyword = keywords[Math.floor(Math.random() * keywords.length)];
                 cipher = generateKeywordCipher(currentKeyword, mappingType);
             }
@@ -490,7 +667,8 @@
             // Clear input fields
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
-                document.getElementById(`input-${letter}`).value = '';
+                const input = document.getElementById(`input-${letter}`);
+                if (input) input.value = '';
             }
 
             updateDisplay();
@@ -691,120 +869,5 @@
             // Update display
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
-                document.getElementById(`freq-${letter}`).textContent = frequencies[letter];
-                
-                // Update input field
-                const input = document.getElementById(`input-${letter}`);
-                input.value = guesses[letter] || '';
-            }
-        }
-
-        function processSubstitution() {
-            const input = document.getElementById('substitutionInput').value.trim().toUpperCase();
-            const match = input.match(/^([A-Z])\s+([A-Z])$/);
-            
-            if (match) {
-                const [, cipherLetter, plainLetter] = match;
-                guesses[cipherLetter] = plainLetter;
-                document.getElementById(`input-${cipherLetter}`).value = plainLetter;
-                updateDisplay();
-                updateFrequencyTable();
-                updateStatus(`Substituted ${cipherLetter} with ${plainLetter}`);
-                document.getElementById('substitutionInput').value = '';
-            } else {
-                updateStatus("Invalid format. Please use format like 'X E'");
-            }
-        }
-
-        function checkSolution() {
-            let decodedText = '';
-            for (let c of encodedText) {
-                if (/[A-Z]/.test(c)) {
-                    decodedText += guesses[c] || ' ';
-                } else {
-                    decodedText += c;
-                }
-            }
-            
-            const normalize = text => text.toUpperCase().replace(/[^A-Z]/g, '');
-            
-            if (normalize(decodedText) === normalize(currentQuote)) {
-                let message = `🎉 Correct!\n\nOriginal Quote:\n${currentQuote}`;
-                if (currentKeyword && mappingType !== 'random') {
-                    message += `\n\nCipher: ${mappingType.toUpperCase()}\nKeyword: ${currentKeyword}`;
-                    if (isXenocrypt) {
-                        message += '\nType: Xenocrypt (Spanish quote with English keyword)';
-                    }
-                }
-                alert(message);
-                updateStatus('Correct! 🎉');
-            } else {
-                updateStatus('Incorrect. Keep trying! 🤔');
-            }
-        }
-
-        function showHint() {
-            if (!isAristocrat && firstWord) {
-                alert(`💡 Hint: The first word is "${firstWord}"`);
-            } else {
-                alert('Hints are only available for Patristocrat puzzles.');
-            }
-        }
-
-        function guessKeyword() {
-            if (mappingType === 'random') {
-                alert('Keyword guessing is only available for K1, K2, and K3 cipher types.');
-                return;
-            }
-            
-            const guess = prompt(`Enter your guess for the ${mappingType.toUpperCase()} keyword:`);
-            if (guess) {
-                const cleanGuess = guess.trim().toUpperCase();
-                if (cleanGuess === currentKeyword) {
-                    alert(`🎯 Correct! The keyword is: ${currentKeyword}`);
-                    updateStatus(`Keyword guessed correctly: ${currentKeyword}`);
-                } else {
-                    alert('❌ Incorrect. Try again!');
-                    updateStatus('Incorrect keyword guess.');
-                }
-            }
-        }
-
-        function revealAnswer() {
-            if (confirm('Are you sure you want to see the answer?')) {
-                // Create reverse mapping
-                const reverseMapping = {};
-                for (let [plain, cipher] of Object.entries(cipher)) {
-                    reverseMapping[cipher] = plain;
-                }
-                
-                // Fill in all guesses
-                guesses = { ...reverseMapping };
-                
-                // Update input fields
-                for (let i = 0; i < 26; i++) {
-                    const letter = String.fromCharCode(65 + i);
-                    document.getElementById(`input-${letter}`).value = guesses[letter] || '';
-                }
-                
-                updateDisplay();
-                updateFrequencyTable();
-                
-                let message = `📝 Solution:\n\n${currentQuote}`;
-                if (currentKeyword && mappingType !== 'random') {
-                    message += `\n\nCipher: ${mappingType.toUpperCase()}\nKeyword: ${currentKeyword}`;
-                }
-                alert(message);
-                updateStatus('Answer revealed 👁️');
-            }
-        }
-
-        function updateStatus(message) {
-            document.getElementById('statusLabel').textContent = message;
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', init);
-    </script>
-</body>
-</html>
+                const freqElement = document.getElementById(`freq-${letter}`);
+                if (freqElement) freqElement.textContent = frequencies[letter];
