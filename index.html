@@ -306,12 +306,8 @@
             </div>
 
             <div id="errorMessage" class="error" style="display: none;">
-                ❌ Error loading files. Please check that the following files exist:
-                <ul>
-                    <li><strong>quotes.json</strong> - English quotes in JSON format</li>
-                    <li><strong>spanishQuotes.txt</strong> - Spanish quotes in JSON format</li>
-                    <li><strong>words.txt</strong> - Keywords (one per line)</li>
-                </ul>
+                ⚠️ Could not load external files. Using built-in content instead.
+                <br><small>If you have custom files (quotes.json, spanishQuotes.txt, words.txt), make sure they're in the same directory.</small>
             </div>
 
             <div id="fileStats" class="file-stats" style="display: none;">
@@ -415,6 +411,13 @@
 
         // File loading functions
         async function loadFiles() {
+            const maxLoadTime = 5000; // 5 seconds timeout
+            const loadingTimeout = setTimeout(() => {
+                console.warn('File loading timeout - proceeding with fallback data');
+                useFallbackData();
+                showGameContent();
+            }, maxLoadTime);
+
             try {
                 updateLoadingMessage('Loading English quotes from quotes.json...');
                 await loadEnglishQuotes();
@@ -425,14 +428,57 @@
                 updateLoadingMessage('Loading keywords from words.txt...');
                 await loadKeywords();
                 
+                clearTimeout(loadingTimeout);
                 filesLoaded = true;
                 showGameContent();
                 updateFileStats();
                 
             } catch (error) {
+                clearTimeout(loadingTimeout);
                 console.error('Error loading files:', error);
+                useFallbackData();
                 showError();
             }
+        }
+
+        function useFallbackData() {
+            // Set fallback data if files can't be loaded
+            if (englishQuotes.length === 0) {
+                englishQuotes = [
+                    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    "TO BE OR NOT TO BE THAT IS THE QUESTION",
+                    "ALL THE WORLD IS A STAGE AND ALL THE MEN AND WOMEN MERELY PLAYERS",
+                    "LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS",
+                    "THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO",
+                    "KNOWLEDGE IS POWER BUT ENTHUSIASM PULLS THE SWITCH",
+                    "SUCCESS IS NOT FINAL FAILURE IS NOT FATAL IT IS THE COURAGE TO CONTINUE THAT COUNTS",
+                    "THE FUTURE BELONGS TO THOSE WHO BELIEVE IN THE BEAUTY OF THEIR DREAMS",
+                    "IT IS DURING OUR DARKEST MOMENTS THAT WE MUST FOCUS TO SEE THE LIGHT",
+                    "BELIEVE YOU CAN AND YOU ARE HALFWAY THERE"
+                ];
+            }
+
+            if (spanishQuotes.length === 0) {
+                spanishQuotes = [
+                    "EL ZORRO MARRÓN RÁPIDO SALTA SOBRE EL PERRO PEREZOSO",
+                    "LA VIDA ES LO QUE PASA MIENTRAS ESTÁS OCUPADO HACIENDO OTROS PLANES",
+                    "EL ÚNICO MODO DE HACER UN GRAN TRABAJO ES AMAR LO QUE HACES",
+                    "EL CONOCIMIENTO ES PODER PERO EL ENTUSIASMO TIRA DEL INTERRUPTOR",
+                    "EL FUTURO PERTENECE A AQUELLOS QUE CREEN EN LA BELLEZA DE SUS SUEÑOS"
+                ];
+            }
+
+            if (keywords.length === 0) {
+                keywords = [
+                    "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", 
+                    "CODING", "CRYPTO", "SOLVER", "BREAK", "DECODE", "REVEAL",
+                    "ALGORITHM", "PATTERN", "FREQUENCY", "SUBSTITUTION", "ENCRYPT",
+                    "CHALLENGE", "BRAIN", "LOGIC", "THINK", "ANALYZE", "DISCOVER"
+                ];
+            }
+
+            filesLoaded = true;
+            updateFileStats();
         }
 
         async function loadEnglishQuotes() {
@@ -462,15 +508,8 @@
                 }
                 
             } catch (error) {
-                // Fallback quotes if file fails to load
-                console.warn('Failed to load quotes.json, using fallback quotes');
-                englishQuotes = [
-                    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-                    "TO BE OR NOT TO BE THAT IS THE QUESTION",
-                    "ALL THE WORLD IS A STAGE AND ALL THE MEN AND WOMEN MERELY PLAYERS",
-                    "LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS",
-                    "THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO"
-                ];
+                // Will use fallback quotes
+                throw error;
             }
         }
 
@@ -508,13 +547,8 @@
                 }
                 
             } catch (error) {
-                // Fallback Spanish quotes if file fails to load
-                console.warn('Failed to load spanishQuotes.txt, using fallback quotes');
-                spanishQuotes = [
-                    "EL ZORRO MARRÓN RÁPIDO SALTA SOBRE EL PERRO PEREZOSO",
-                    "LA VIDA ES LO QUE PASA MIENTRAS ESTÁS OCUPADO HACIENDO OTROS PLANES",
-                    "EL ÚNICO MODO DE HACER UN GRAN TRABAJO ES AMAR LO QUE HACES"
-                ];
+                // Will use fallback quotes
+                throw error;
             }
         }
 
@@ -533,12 +567,8 @@
                 }
                 
             } catch (error) {
-                // Fallback keywords if file fails to load
-                console.warn('Failed to load words.txt, using fallback keywords');
-                keywords = [
-                    "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", 
-                    "CODING", "CRYPTO", "SOLVER", "BREAK", "DECODE", "REVEAL"
-                ];
+                // Will use fallback keywords
+                throw error;
             }
         }
 
@@ -549,6 +579,8 @@
         function showError() {
             document.getElementById('loadingMessage').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('fileStats').style.display = 'block';
+            document.getElementById('gameContent').style.display = 'block';
         }
 
         function showGameContent() {
@@ -816,38 +848,7 @@
                             if (guesses[c]) {
                                 html += `<span class="substitution-display">${guesses[c]}</span>`;
                             } else {
-                                html += `<span class="underscore">_</span>`;
-                            }
-                        } else {
-                            html += `<span>${c}</span>`;
-                        }
-                    }
-                    html += '</div>';
-                });
-                
-                display.innerHTML = html;
-            } else {
-                // Patristocrat format: groups of 5 letters
-                const cleanText = encodedText.replace(/[^A-Z]/g, '');
-                const groups = [];
-                for (let i = 0; i < cleanText.length; i += 5) {
-                    groups.push(cleanText.slice(i, i + 5));
-                }
-                
-                let html = '';
-                
-                // Cipher line
-                html += '<div class="cipher-line">' + groups.join(' ') + '</div>';
-                
-                // Plain line
-                html += '<div class="plain-line">';
-                groups.forEach((group, index) => {
-                    if (index > 0) html += ' ';
-                    for (let c of group) {
-                        if (guesses[c]) {
-                            html += `<span class="substitution-display">${guesses[c]}</span>`;
-                        } else {
-                            html += `<span class="underscore">_</span>`;}
+                                html}
                     }
                 });
                 html += '</div>';
