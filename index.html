@@ -309,7 +309,7 @@
                 ❌ Error loading files. Please check that the following files exist:
                 <ul>
                     <li><strong>quotes.json</strong> - English quotes in JSON format</li>
-                    <li><strong>spanishQuotes.txt</strong> - Spanish quotes (one per line)</li>
+                    <li><strong>spanishQuotes.txt</strong> - Spanish quotes in JSON format</li>
                     <li><strong>words.txt</strong> - Keywords (one per line)</li>
                 </ul>
             </div>
@@ -446,12 +446,12 @@
                 if (Array.isArray(data)) {
                     englishQuotes = data.map(item => 
                         typeof item === 'string' ? item.toUpperCase() : 
-                        (item.quote || item.text || item.content || '').toUpperCase()
+                        (item.Quote || item.quote || item.text || item.content || '').toUpperCase()
                     ).filter(quote => quote.length > 0);
                 } else if (data.quotes && Array.isArray(data.quotes)) {
                     englishQuotes = data.quotes.map(item => 
                         typeof item === 'string' ? item.toUpperCase() : 
-                        (item.quote || item.text || item.content || '').toUpperCase()
+                        (item.Quote || item.quote || item.text || item.content || '').toUpperCase()
                     ).filter(quote => quote.length > 0);
                 } else {
                     throw new Error('Invalid JSON structure');
@@ -480,9 +480,28 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const text = await response.text();
-                spanishQuotes = text.split('\n')
-                    .map(line => line.trim().toUpperCase())
-                    .filter(line => line.length > 0);
+                
+                // Try to parse as JSON first (since your file is actually JSON)
+                try {
+                    const data = JSON.parse(text);
+                    if (data.quotes && Array.isArray(data.quotes)) {
+                        spanishQuotes = data.quotes.map(item => 
+                            (item.Cita || item.cita || item.quote || item.Quote || '').toUpperCase()
+                        ).filter(quote => quote.length > 0);
+                    } else if (Array.isArray(data)) {
+                        spanishQuotes = data.map(item => 
+                            typeof item === 'string' ? item.toUpperCase() : 
+                            (item.Cita || item.cita || item.quote || item.Quote || '').toUpperCase()
+                        ).filter(quote => quote.length > 0);
+                    } else {
+                        throw new Error('Invalid JSON structure for Spanish quotes');
+                    }
+                } catch (jsonError) {
+                    // If JSON parsing fails, try as plain text
+                    spanishQuotes = text.split('\n')
+                        .map(line => line.trim().toUpperCase())
+                        .filter(line => line.length > 0);
+                }
                 
                 if (spanishQuotes.length === 0) {
                     throw new Error('No quotes found in spanishQuotes.txt');
@@ -505,7 +524,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const text = await response.text();
-                keywords = text.split('\n')
+                keywords = text.split(/\r?\n/)
                     .map(line => line.trim().toUpperCase())
                     .filter(line => line.length > 0 && /^[A-Z]+$/.test(line));
                 
@@ -643,6 +662,9 @@
             }
             
             currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            
+            // Clean quotes (remove surrounding quotes and escape characters)
+            currentQuote = currentQuote.replace(/^"|"$|\\"/g, '');
             
             // Get first word for hints
             const words = currentQuote.trim().split(/\s+/);
@@ -825,8 +847,7 @@
                         if (guesses[c]) {
                             html += `<span class="substitution-display">${guesses[c]}</span>`;
                         } else {
-                            html += `<span class="underscore">_</span>`;
-                        }
+                            html += `<span class="underscore">_</span>`;}
                     }
                 });
                 html += '</div>';
@@ -836,38 +857,177 @@
         }
 
         function splitIntoLines(text, maxLength) {
-            const words = text.split(' ');
             const lines = [];
             let currentLine = '';
+            const words = text.split(' ');
             
-            words.forEach(word => {
+            for (let word of words) {
                 if (currentLine.length + word.length + 1 <= maxLength) {
                     currentLine += (currentLine ? ' ' : '') + word;
                 } else {
                     if (currentLine) lines.push(currentLine);
                     currentLine = word;
                 }
-            });
-            
+            }
             if (currentLine) lines.push(currentLine);
+            
             return lines;
         }
 
         function updateFrequencyTable() {
-            // Count frequencies
+            // Count letter frequencies in cipher text
             const frequencies = {};
             for (let i = 0; i < 26; i++) {
                 frequencies[String.fromCharCode(65 + i)] = 0;
             }
-            
+
             for (let c of encodedText) {
                 if (/[A-Z]/.test(c)) {
                     frequencies[c]++;
                 }
             }
-            
-            // Update display
+
+            // Update frequency display
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
-                const freqElement = document.getElementById(`freq-${letter}`);
-                if (freqElement) freqElement.textContent = frequencies[letter];
+                const cell = document.getElementById(`freq-${letter}`);
+                if (cell) {
+                    cell.textContent = frequencies[letter];
+                }
+            }
+
+            // Update input field backgrounds based on guesses
+            for (let i = 0; i < 26; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const input = document.getElementById(`input-${letter}`);
+                if (input) {
+                    if (guesses[letter]) {
+                        input.style.backgroundColor = '#e8f5e8';
+                        input.style.color = '#27ae60';
+                    } else {
+                        input.style.backgroundColor = '';
+                        input.style.color = '';
+                    }
+                }
+            }
+        }
+
+        function processSubstitution() {
+            const input = document.getElementById('substitutionInput');
+            const value = input.value.trim().toUpperCase();
+            
+            if (value.length === 3 && value[1] === ' ') {
+                const cipher = value[0];
+                const plain = value[2];
+                
+                if (/[A-Z]/.test(cipher) && /[A-Z]/.test(plain)) {
+                    guesses[cipher] = plain;
+                    
+                    // Update frequency table input
+                    const freqInput = document.getElementById(`input-${cipher}`);
+                    if (freqInput) {
+                        freqInput.value = plain;
+                    }
+                    
+                    updateDisplay();
+                    updateFrequencyTable();
+                    input.value = '';
+                    updateStatus(`Substitution applied: ${cipher} → ${plain}`);
+                } else {
+                    updateStatus('Invalid substitution format. Use format: X E');
+                }
+            } else {
+                updateStatus('Invalid format. Use: CIPHER PLAIN (e.g., X E)');
+            }
+        }
+
+        function checkSolution() {
+            // Create reverse cipher mapping
+            const reverseCipher = {};
+            for (let [plain, cipherLetter] of Object.entries(cipher)) {
+                reverseCipher[cipherLetter] = plain;
+            }
+
+            let correct = 0;
+            let total = 0;
+
+            for (let [cipherLetter, guessedPlain] of Object.entries(guesses)) {
+                total++;
+                if (reverseCipher[cipherLetter] === guessedPlain) {
+                    correct++;
+                }
+            }
+
+            if (total === 0) {
+                updateStatus('No substitutions made yet');
+                return;
+            }
+
+            const percentage = Math.round((correct / total) * 100);
+            
+            if (correct === total && total === 26) {
+                updateStatus(`🎉 Perfect! You solved the puzzle completely! (${correct}/${total} correct)`);
+            } else if (percentage >= 80) {
+                updateStatus(`🎯 Excellent progress! ${correct}/${total} correct (${percentage}%)`);
+            } else if (percentage >= 60) {
+                updateStatus(`👍 Good work! ${correct}/${total} correct (${percentage}%)`);
+            } else {
+                updateStatus(`📈 Keep going! ${correct}/${total} correct (${percentage}%)`);
+            }
+        }
+
+        function showHint() {
+            if (!firstWord) {
+                updateStatus('No hint available for this puzzle');
+                return;
+            }
+            
+            updateStatus(`💡 Hint: The first word is "${firstWord}"`);
+        }
+
+        function guessKeyword() {
+            if (!currentKeyword) {
+                updateStatus('This puzzle was not generated with a keyword');
+                return;
+            }
+            
+            updateStatus(`🗝️ Keyword hint: The keyword is "${currentKeyword}"`);
+        }
+
+        function revealAnswer() {
+            if (!confirm('Are you sure you want to reveal the answer? This will show the complete solution.')) {
+                return;
+            }
+
+            // Create reverse cipher mapping
+            const reverseCipher = {};
+            for (let [plain, cipherLetter] of Object.entries(cipher)) {
+                reverseCipher[cipherLetter] = plain;
+            }
+
+            // Fill in all guesses
+            guesses = { ...reverseCipher };
+
+            // Update all input fields
+            for (let i = 0; i < 26; i++) {
+                const letter = String.fromCharCode(65 + i);
+                const input = document.getElementById(`input-${letter}`);
+                if (input && reverseCipher[letter]) {
+                    input.value = reverseCipher[letter];
+                }
+            }
+
+            updateDisplay();
+            updateFrequencyTable();
+            updateStatus(`📖 Answer revealed: "${currentQuote}"`);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('statusLabel').textContent = message;
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
