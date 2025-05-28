@@ -411,11 +411,12 @@
 
         // File loading functions
         async function loadFiles() {
-            const maxLoadTime = 5000; // 5 seconds timeout
+            const maxLoadTime = 3000; // 3 seconds timeout
+            
             const loadingTimeout = setTimeout(() => {
                 console.warn('File loading timeout - proceeding with fallback data');
                 useFallbackData();
-                showGameContent();
+                initializeGame();
             }, maxLoadTime);
 
             try {
@@ -430,14 +431,14 @@
                 
                 clearTimeout(loadingTimeout);
                 filesLoaded = true;
-                showGameContent();
-                updateFileStats();
+                initializeGame();
                 
             } catch (error) {
                 clearTimeout(loadingTimeout);
                 console.error('Error loading files:', error);
                 useFallbackData();
                 showError();
+                initializeGame();
             }
         }
 
@@ -473,12 +474,12 @@
                     "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", 
                     "CODING", "CRYPTO", "SOLVER", "BREAK", "DECODE", "REVEAL",
                     "ALGORITHM", "PATTERN", "FREQUENCY", "SUBSTITUTION", "ENCRYPT",
-                    "CHALLENGE", "BRAIN", "LOGIC", "THINK", "ANALYZE", "DISCOVER"
+                    "CHALLENGE", "BRAIN", "LOGIC", "THINK", "ANALYZE", "DISCOVER",
+                    "MACHINERY", "TELEPHONE", "COMPUTER", "MATHEMATICS", "SCIENCE"
                 ];
             }
 
             filesLoaded = true;
-            updateFileStats();
         }
 
         async function loadEnglishQuotes() {
@@ -488,7 +489,6 @@
                 
                 const data = await response.json();
                 
-                // Handle different JSON structures
                 if (Array.isArray(data)) {
                     englishQuotes = data.map(item => 
                         typeof item === 'string' ? item.toUpperCase() : 
@@ -508,7 +508,6 @@
                 }
                 
             } catch (error) {
-                // Will use fallback quotes
                 throw error;
             }
         }
@@ -520,7 +519,6 @@
                 
                 const text = await response.text();
                 
-                // Try to parse as JSON first (since your file is actually JSON)
                 try {
                     const data = JSON.parse(text);
                     if (data.quotes && Array.isArray(data.quotes)) {
@@ -536,7 +534,6 @@
                         throw new Error('Invalid JSON structure for Spanish quotes');
                     }
                 } catch (jsonError) {
-                    // If JSON parsing fails, try as plain text
                     spanishQuotes = text.split('\n')
                         .map(line => line.trim().toUpperCase())
                         .filter(line => line.length > 0);
@@ -547,7 +544,6 @@
                 }
                 
             } catch (error) {
-                // Will use fallback quotes
                 throw error;
             }
         }
@@ -567,7 +563,6 @@
                 }
                 
             } catch (error) {
-                // Will use fallback keywords
                 throw error;
             }
         }
@@ -579,15 +574,17 @@
         function showError() {
             document.getElementById('loadingMessage').style.display = 'none';
             document.getElementById('errorMessage').style.display = 'block';
-            document.getElementById('fileStats').style.display = 'block';
-            document.getElementById('gameContent').style.display = 'block';
         }
 
-        function showGameContent() {
+        function initializeGame() {
             document.getElementById('loadingMessage').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'none';
             document.getElementById('fileStats').style.display = 'block';
             document.getElementById('gameContent').style.display = 'block';
+            
+            updateFileStats();
+            setupEventHandlers();
+            createFrequencyTable();
+            loadNewPuzzle();
         }
 
         function updateFileStats() {
@@ -595,17 +592,7 @@
             document.getElementById('statsText').textContent = statsText;
         }
 
-        // Initialize the game
-        function init() {
-            loadFiles().then(() => {
-                setupEventHandlers();
-                createFrequencyTable();
-                loadNewPuzzle();
-            });
-        }
-
         function setupEventHandlers() {
-            // Puzzle type handlers
             document.querySelectorAll('input[name="puzzleType"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     isAristocrat = this.value === 'aristocrat';
@@ -614,7 +601,6 @@
                 });
             });
 
-            // Cipher type handlers
             document.querySelectorAll('input[name="cipherType"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     mappingType = this.value;
@@ -622,7 +608,6 @@
                 });
             });
 
-            // Substitution input handler
             document.getElementById('substitutionInput').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     processSubstitution();
@@ -637,7 +622,6 @@
             table.innerHTML = '';
             inputRow.innerHTML = '';
 
-            // Create header row with letters
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
                 const headerCell = document.createElement('div');
@@ -646,7 +630,6 @@
                 table.appendChild(headerCell);
             }
 
-            // Create frequency count row
             for (let i = 0; i < 26; i++) {
                 const freqCell = document.createElement('div');
                 freqCell.className = 'freq-cell';
@@ -655,7 +638,6 @@
                 table.appendChild(freqCell);
             }
 
-            // Create input row
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
                 const input = document.createElement('input');
@@ -682,11 +664,8 @@
         }
 
         function loadNewPuzzle() {
-            if (!filesLoaded) return;
-            
             guesses = {};
             
-            // Select quote based on puzzle type
             const quotes = isXenocrypt ? spanishQuotes : englishQuotes;
             if (quotes.length === 0) {
                 updateStatus('No quotes available for this puzzle type');
@@ -694,15 +673,11 @@
             }
             
             currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
-            
-            // Clean quotes (remove surrounding quotes and escape characters)
             currentQuote = currentQuote.replace(/^"|"$|\\"/g, '');
             
-            // Get first word for hints
             const words = currentQuote.trim().split(/\s+/);
             firstWord = words.length > 0 ? words[0].replace(/[^A-Z]/g, '') : '';
 
-            // Generate cipher
             if (mappingType === 'random') {
                 cipher = generateRandomCipher();
                 currentKeyword = '';
@@ -715,10 +690,8 @@
                 cipher = generateKeywordCipher(currentKeyword, mappingType);
             }
 
-            // Encode text
             encodedText = isAristocrat ? encodeAristocrat(currentQuote) : encodePatristocrat(currentQuote);
 
-            // Clear input fields
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
                 const input = document.getElementById(`input-${letter}`);
@@ -734,16 +707,13 @@
             const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
             const cipherAlphabet = [...plainAlphabet];
             
-            // Fisher-Yates shuffle
             for (let i = cipherAlphabet.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cipherAlphabet[i], cipherAlphabet[j]] = [cipherAlphabet[j], cipherAlphabet[i]];
             }
 
-            // Ensure no letter maps to itself
             for (let i = 0; i < 26; i++) {
                 if (plainAlphabet[i] === cipherAlphabet[i]) {
-                    // Swap with next position (or first if at end)
                     const swapIndex = (i + 1) % 26;
                     [cipherAlphabet[i], cipherAlphabet[swapIndex]] = [cipherAlphabet[swapIndex], cipherAlphabet[i]];
                 }
@@ -757,55 +727,57 @@
         }
 
         function generateKeywordCipher(keyword, type) {
-            const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-            let cipherAlphabet = [];
-
-            // Remove duplicates from keyword
-            const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c));
-
+            const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c)).join('');
+            
+            let cipherAlphabet = '';
+            
             if (type === 'k1') {
-                // K1: keyword + remaining alphabet
-                cipherAlphabet = [...cleanKeyword];
+                // K1: keyword + remaining alphabet in order
+                cipherAlphabet = cleanKeyword;
                 for (let c of plainAlphabet) {
                     if (!cipherAlphabet.includes(c)) {
-                        cipherAlphabet.push(c);
+                        cipherAlphabet += c;
                     }
                 }
             } else if (type === 'k2') {
-                // K2: interleave keyword with alphabet
-                const remaining = plainAlphabet.filter(c => !cleanKeyword.includes(c));
+                // K2: alternate between keyword letters and alphabet letters
+                const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c));
                 let keyIndex = 0, alphaIndex = 0;
                 
                 while (cipherAlphabet.length < 26) {
                     if (keyIndex < cleanKeyword.length) {
-                        cipherAlphabet.push(cleanKeyword[keyIndex++]);
+                        cipherAlphabet += cleanKeyword[keyIndex++];
                     }
                     if (alphaIndex < remaining.length && cipherAlphabet.length < 26) {
-                        cipherAlphabet.push(remaining[alphaIndex++]);
+                        cipherAlphabet += remaining[alphaIndex++];
                     }
                 }
             } else if (type === 'k3') {
-                // K3: keyword + reversed remaining alphabet
-                cipherAlphabet = [...cleanKeyword];
-                const remaining = plainAlphabet.filter(c => !cleanKeyword.includes(c)).reverse();
-                cipherAlphabet.push(...remaining);
+                // K3: keyword + remaining alphabet in reverse order
+                cipherAlphabet = cleanKeyword;
+                const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c)).reverse();
+                cipherAlphabet += remaining.join('');
             }
 
-            // Apply random shift
-            const shift = Math.floor(Math.random() * 26);
-            cipherAlphabet = cipherAlphabet.slice(shift).concat(cipherAlphabet.slice(0, shift));
-
-            // Ensure no letter maps to itself
+            // Ensure no self-mapping
+            const cipherArray = cipherAlphabet.split('');
             for (let i = 0; i < 26; i++) {
-                if (plainAlphabet[i] === cipherAlphabet[i]) {
-                    const swapIndex = (i + 1) % 26;
-                    [cipherAlphabet[i], cipherAlphabet[swapIndex]] = [cipherAlphabet[swapIndex], cipherAlphabet[i]];
+                if (plainAlphabet[i] === cipherArray[i]) {
+                    // Find next position that doesn't create self-mapping
+                    let swapIndex = (i + 1) % 26;
+                    while (swapIndex !== i && (plainAlphabet[swapIndex] === cipherArray[i] || plainAlphabet[i] === cipherArray[swapIndex])) {
+                        swapIndex = (swapIndex + 1) % 26;
+                    }
+                    if (swapIndex !== i) {
+                        [cipherArray[i], cipherArray[swapIndex]] = [cipherArray[swapIndex], cipherArray[i]];
+                    }
                 }
             }
 
             const result = {};
             for (let i = 0; i < 26; i++) {
-                result[plainAlphabet[i]] = cipherAlphabet[i];
+                result[plainAlphabet[i]] = cipherArray[i];
             }
             return result;
         }
@@ -829,30 +801,43 @@
             const display = document.getElementById('cryptogramDisplay');
             
             if (isAristocrat) {
-                // Aristocrat format: preserve spaces and punctuation
                 const lines = splitIntoLines(encodedText, 60);
                 let html = '';
                 
                 lines.forEach(line => {
-                    // Cipher line
                     html += '<div class="cipher-line">';
                     for (let c of line) {
                         html += `<span>${c}</span>`;
                     }
                     html += '</div>';
                     
-                    // Plain line
                     html += '<div class="plain-line">';
                     for (let c of line) {
                         if (/[A-Z]/.test(c)) {
                             if (guesses[c]) {
                                 html += `<span class="substitution-display">${guesses[c]}</span>`;
                             } else {
-                                html}
+                                html += `<span class="underscore">_</span>`;
+                            }
+                        } else {
+                            html += `<span>${c}</span>`;
+                        }
                     }
+                    html += '</div>';
                 });
-                html += '</div>';
                 
+                display.innerHTML = html;
+            } else {
+                html = '<div class="cipher-line">' + encodedText + '</div>';
+                html += '<div class="plain-line">';
+                for (let c of encodedText) {
+                    if (guesses[c]) {
+                        html += `<span class="substitution-display">${guesses[c]}</span>`;
+                    } else {
+                        html += `<span class="underscore">_</span>`;
+                    }
+                }
+                html += '</div>';
                 display.innerHTML = html;
             }
         }
@@ -862,154 +847,127 @@
             let currentLine = '';
             const words = text.split(' ');
             
-            for (let word of words) {
-                if (currentLine.length + word.length + 1 <= maxLength) {
-                    currentLine += (currentLine ? ' ' : '') + word;
-                } else {
-                    if (currentLine) lines.push(currentLine);
-                    currentLine = word;
-                }
-            }
-            if (currentLine) lines.push(currentLine);
-            
-            return lines;
-        }
-
-        function updateFrequencyTable() {
-            // Count letter frequencies in cipher text
-            const frequencies = {};
-            for (let i = 0; i < 26; i++) {
-                frequencies[String.fromCharCode(65 + i)] = 0;
-            }
-
-            for (let c of encodedText) {
-                if (/[A-Z]/.test(c)) {
-                    frequencies[c]++;
-                }
-            }
-
-            // Update frequency display
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const cell = document.getElementById(`freq-${letter}`);
-                if (cell) {
-                    cell.textContent = frequencies[letter];
-                }
-            }
-
-            // Update input field backgrounds based on guesses
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const input = document.getElementById(`input-${letter}`);
-                if (input) {
-                    if (guesses[letter]) {
-                        input.style.backgroundColor = '#e8f5e8';
-                        input.style.color = '#27ae60';
-                    } else {
-                        input.style.backgroundColor = '';
-                        input.style.color = '';
-                    }
-                }
-            }
-        }
-
-        function processSubstitution() {
-            const input = document.getElementById('substitutionInput');
-            const value = input.value.trim().toUpperCase();
-            
-            if (value.length === 3 && value[1] === ' ') {
-                const cipher = value[0];
-                const plain = value[2];
-                
-                if (/[A-Z]/.test(cipher) && /[A-Z]/.test(plain)) {
-                    guesses[cipher] = plain;
-                    
-                    // Update frequency table input
-                    const freqInput = document.getElementById(`input-${cipher}`);
-                    if (freqInput) {
-                        freqInput.value = plain;
-                    }
-                    
-                    updateDisplay();
-                    updateFrequencyTable();
-                    input.value = '';
-                    updateStatus(`Substitution applied: ${cipher} → ${plain}`);
-                } else {
-                    updateStatus('Invalid substitution format. Use format: X E');
-                }
+          for (let word of words) {
+            if (currentLine.length + word.length + 1 <= maxLength) {
+                currentLine += (currentLine ? ' ' : '') + word;
             } else {
-                updateStatus('Invalid format. Use: CIPHER PLAIN (e.g., X E)');
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        if (currentLine) lines.push(currentLine);
+        return lines;
+    }
+
+    function updateFrequencyTable() {
+        const frequencies = {};
+        for (let c of encodedText) {
+            if (/[A-Z]/.test(c)) {
+                frequencies[c] = (frequencies[c] || 0) + 1;
             }
         }
 
-        function checkSolution() {
-            // Create reverse cipher mapping
-            const reverseCipher = {};
-            for (let [plain, cipherLetter] of Object.entries(cipher)) {
-                reverseCipher[cipherLetter] = plain;
+        for (let i = 0; i < 26; i++) {
+            const letter = String.fromCharCode(65 + i);
+            const cell = document.getElementById(`freq-${letter}`);
+            if (cell) {
+                cell.textContent = frequencies[letter] || 0;
             }
+        }
+    }
 
-            let correct = 0;
-            let total = 0;
-
-            for (let [cipherLetter, guessedPlain] of Object.entries(guesses)) {
-                total++;
-                if (reverseCipher[cipherLetter] === guessedPlain) {
-                    correct++;
-                }
-            }
-
-            if (total === 0) {
-                updateStatus('No substitutions made yet');
-                return;
-            }
-
-            const percentage = Math.round((correct / total) * 100);
+    function processSubstitution() {
+        const input = document.getElementById('substitutionInput').value.trim().toUpperCase();
+        const parts = input.split(/\s+/);
+        
+        if (parts.length === 2 && /^[A-Z]$/.test(parts[0]) && /^[A-Z]$/.test(parts[1])) {
+            const cipherLetter = parts[0];
+            const plainLetter = parts[1];
             
-            if (correct === total && total === 26) {
-                updateStatus(`🎉 Perfect! You solved the puzzle completely! (${correct}/${total} correct)`);
-            } else if (percentage >= 80) {
-                updateStatus(`🎯 Excellent progress! ${correct}/${total} correct (${percentage}%)`);
-            } else if (percentage >= 60) {
-                updateStatus(`👍 Good work! ${correct}/${total} correct (${percentage}%)`);
+            guesses[cipherLetter] = plainLetter;
+            
+            const inputField = document.getElementById(`input-${cipherLetter}`);
+            if (inputField) inputField.value = plainLetter;
+            
+            updateDisplay();
+            updateFrequencyTable();
+            document.getElementById('substitutionInput').value = '';
+            updateStatus(`Applied substitution: ${cipherLetter} → ${plainLetter}`);
+        } else {
+            updateStatus('Invalid substitution format. Use format: X E');
+        }
+    }
+
+    function checkSolution() {
+        const reverseCipher = {};
+        for (let [plain, cipher] of Object.entries(cipher)) {
+            reverseCipher[cipher] = plain;
+        }
+
+        let correct = 0;
+        let total = 0;
+        
+        for (let [cipherLetter, plainGuess] of Object.entries(guesses)) {
+            total++;
+            if (reverseCipher[cipherLetter] === plainGuess) {
+                correct++;
+            }
+        }
+
+        if (total === 0) {
+            updateStatus('No substitutions made yet!');
+            return;
+        }
+
+        const percentage = Math.round((correct / total) * 100);
+        updateStatus(`${correct}/${total} correct substitutions (${percentage}%)`);
+
+        if (correct === total && total === Object.keys(cipher).length) {
+            updateStatus('🎉 Puzzle solved perfectly! Congratulations!');
+        }
+    }
+
+    function showHint() {
+        if (!firstWord) {
+            updateStatus('No hint available for this puzzle');
+            return;
+        }
+
+        const reverseCipher = {};
+        for (let [plain, cipher] of Object.entries(cipher)) {
+            reverseCipher[cipher] = plain;
+        }
+
+        const encodedFirstWord = firstWord.split('').map(c => cipher[c]).join('');
+        updateStatus(`Hint: The first word "${encodedFirstWord}" decodes to "${firstWord}"`);
+    }
+
+    function guessKeyword() {
+        if (!currentKeyword) {
+            updateStatus('This puzzle was not generated with a keyword');
+            return;
+        }
+
+        const userGuess = prompt('Enter your keyword guess:');
+        if (userGuess) {
+            const cleanGuess = userGuess.toUpperCase().replace(/[^A-Z]/g, '');
+            if (cleanGuess === currentKeyword) {
+                updateStatus(`🎉 Correct! The keyword was "${currentKeyword}"`);
             } else {
-                updateStatus(`📈 Keep going! ${correct}/${total} correct (${percentage}%)`);
+                updateStatus(`❌ Incorrect. The keyword was not "${cleanGuess}"`);
             }
         }
+    }
 
-        function showHint() {
-            if (!firstWord) {
-                updateStatus('No hint available for this puzzle');
-                return;
-            }
-            
-            updateStatus(`💡 Hint: The first word is "${firstWord}"`);
-        }
-
-        function guessKeyword() {
-            if (!currentKeyword) {
-                updateStatus('This puzzle was not generated with a keyword');
-                return;
-            }
-            
-            updateStatus(`🗝️ Keyword hint: The keyword is "${currentKeyword}"`);
-        }
-
-        function revealAnswer() {
-            if (!confirm('Are you sure you want to reveal the answer? This will show the complete solution.')) {
-                return;
-            }
-
-            // Create reverse cipher mapping
+    function revealAnswer() {
+        if (confirm('Are you sure you want to reveal the answer?')) {
             const reverseCipher = {};
-            for (let [plain, cipherLetter] of Object.entries(cipher)) {
-                reverseCipher[cipherLetter] = plain;
+            for (let [plain, cipher] of Object.entries(cipher)) {
+                reverseCipher[cipher] = plain;
             }
 
-            // Fill in all guesses
-            guesses = { ...reverseCipher };
-
-            // Update all input fields
+            guesses = {...reverseCipher};
+            
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
                 const input = document.getElementById(`input-${letter}`);
@@ -1020,15 +978,134 @@
 
             updateDisplay();
             updateFrequencyTable();
-            updateStatus(`📖 Answer revealed: "${currentQuote}"`);
+            
+            let statusMsg = `Answer: "${currentQuote}"`;
+            if (currentKeyword) {
+                statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
+            }
+            updateStatus(statusMsg);
+        }
+    }
+
+    function updateStatus(message) {
+        document.getElementById('statusLabel').textContent = message;
+    }
+
+    // Fixed cipher generation functions
+    function generateKeywordCipher(keyword, type) {
+        const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c)).join('');
+        
+        let cipherAlphabet = '';
+        
+        if (type === 'k1') {
+            // K1: keyword at beginning + remaining alphabet in order
+            cipherAlphabet = cleanKeyword;
+            for (let c of plainAlphabet) {
+                if (!cipherAlphabet.includes(c)) {
+                    cipherAlphabet += c;
+                }
+            }
+        } else if (type === 'k2') {
+            // K2: keyword at position based on first letter's position in alphabet
+            const keywordStart = cleanKeyword.charCodeAt(0) - 65; // Position of first letter (A=0, B=1, etc.)
+            const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c));
+            
+            // Build cipher alphabet: letters before keyword position + keyword + remaining letters
+            cipherAlphabet = remaining.slice(0, keywordStart).join('') + 
+                           cleanKeyword + 
+                           remaining.slice(keywordStart).join('');
+        } else if (type === 'k3') {
+            // K3: keyword + remaining alphabet in reverse order
+            cipherAlphabet = cleanKeyword;
+            const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c)).reverse();
+            cipherAlphabet += remaining.join('');
         }
 
-        function updateStatus(message) {
-            document.getElementById('statusLabel').textContent = message;
+        // Ensure we have exactly 26 characters
+        if (cipherAlphabet.length !== 26) {
+            console.error('Cipher alphabet length error:', cipherAlphabet.length);
+            return generateRandomCipher(); // Fallback
         }
 
-        // Initialize when page loads
-        window.addEventListener('load', init);
+        // Create mapping and ensure no self-mapping
+        const result = {};
+        const cipherArray = cipherAlphabet.split('');
+        
+        for (let i = 0; i < 26; i++) {
+            result[plainAlphabet[i]] = cipherArray[i];
+        }
+
+        // Fix any self-mappings
+        for (let i = 0; i < 26; i++) {
+            if (plainAlphabet[i] === cipherArray[i]) {
+                // Find a suitable swap partner
+                let swapIndex = (i + 1) % 26;
+                while (swapIndex !== i) {
+                    if (plainAlphabet[swapIndex] !== cipherArray[i] && plainAlphabet[i] !== cipherArray[swapIndex]) {
+                        // Perform the swap
+                        [cipherArray[i], cipherArray[swapIndex]] = [cipherArray[swapIndex], cipherArray[i]];
+                        // Update the result mapping
+                        result[plainAlphabet[i]] = cipherArray[i];
+                        result[plainAlphabet[swapIndex]] = cipherArray[swapIndex];
+                        break;
+                    }
+                    swapIndex = (swapIndex + 1) % 26;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // Initialize the application with timeout fallback
+    window.addEventListener('DOMContentLoaded', function() {
+        // Set a maximum loading time of 2 seconds
+        const loadingTimeout = setTimeout(() => {
+            console.warn('Loading timeout - using fallback data');
+            useFallbackData();
+            initializeGame();
+        }, 2000);
+
+        // Try to load files
+        loadFiles().then(() => {
+            clearTimeout(loadingTimeout);
+        }).catch((error) => {
+            clearTimeout(loadingTimeout);
+            console.error('Failed to load files:', error);
+            useFallbackData();
+            showError();
+            initializeGame();
+        });
+    });
+
+    // Fixed file loading with better error handling
+    async function loadFiles() {
+        try {
+            updateLoadingMessage('Loading English quotes...');
+            await loadEnglishQuotes();
+        } catch (error) {
+            console.warn('Failed to load English quotes, using fallback');
+        }
+        
+        try {
+            updateLoadingMessage('Loading Spanish quotes...');
+            await loadSpanishQuotes();
+        } catch (error) {
+            console.warn('Failed to load Spanish quotes, using fallback');
+        }
+        
+        try {
+            updateLoadingMessage('Loading keywords...');
+            await loadKeywords();
+        } catch (error) {
+            console.warn('Failed to load keywords, using fallback');
+        }
+        
+        useFallbackData(); // Ensure we have data
+        filesLoaded = true;
+        initializeGame();
+    }
     </script>
 </body>
 </html>
