@@ -756,131 +756,56 @@
             return result;
         }
 
-   function generateKeywordCipher(keyword, type) {
-            let plaintextAlphabet = [];
+        function generateKeywordCipher(keyword, type) {
+            const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
             let cipherAlphabet = [];
 
+            // Remove duplicates from keyword
+            const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c));
+
             if (type === 'k1') {
-                // K1: keyword + remaining alphabet (matches Java logic)
-                const used = new Set();
-                
-                // Add keyword letters first
-                for (let c of keyword.toUpperCase()) {
-                    if (/[A-Z]/.test(c) && !used.has(c)) {
-                        plaintextAlphabet.push(c);
-                        used.add(c);
+                // K1: keyword + remaining alphabet
+                cipherAlphabet = [...cleanKeyword];
+                for (let c of plainAlphabet) {
+                    if (!cipherAlphabet.includes(c)) {
+                        cipherAlphabet.push(c);
                     }
                 }
-                
-                // Add remaining alphabet letters
-                for (let c = 'A'.charCodeAt(0); c <= 'Z'.charCodeAt(0); c++) {
-                    const letter = String.fromCharCode(c);
-                    if (!used.has(letter)) {
-                        plaintextAlphabet.push(letter);
-                    }
-                }
-                
-                // Create cipher alphabet A-Z
-                for (let c = 'A'.charCodeAt(0); c <= 'Z'.charCodeAt(0); c++) {
-                    cipherAlphabet.push(String.fromCharCode(c));
-                }
-                
             } else if (type === 'k2') {
-                // K2: interleave keyword with alphabet (matches Java logic)
-                plaintextAlphabet = [];
-                for (let c = 'A'.charCodeAt(0); c <= 'Z'.charCodeAt(0); c++) {
-                    plaintextAlphabet.push(String.fromCharCode(c));
-                }
-                
-                cipherAlphabet = [];
-                const used = new Set();
-                
-                // Clean keyword (remove duplicates)
-                const cleanKeyword = [];
-                for (let c of keyword.toUpperCase()) {
-                    if (/[A-Z]/.test(c) && !used.has(c)) {
-                        cleanKeyword.push(c);
-                        used.add(c);
-                    }
-                }
-                used.clear();
-                
-                let keyIndex = 0;
-                let alphabetIndex = 0;
+                // K2: interleave keyword with alphabet
+                const remaining = plainAlphabet.filter(c => !cleanKeyword.includes(c));
+                let keyIndex = 0, alphaIndex = 0;
                 
                 while (cipherAlphabet.length < 26) {
-                    // Add keyword letter
                     if (keyIndex < cleanKeyword.length) {
-                        const k = cleanKeyword[keyIndex++];
-                        if (!used.has(k)) {
-                            cipherAlphabet.push(k);
-                            used.add(k);
-                        }
+                        cipherAlphabet.push(cleanKeyword[keyIndex++]);
                     }
-                    
-                    // Add alphabet letter
-                    while (alphabetIndex < 26 && cipherAlphabet.length < 26) {
-                        const a = String.fromCharCode('A'.charCodeAt(0) + alphabetIndex++);
-                        if (!used.has(a)) {
-                            cipherAlphabet.push(a);
-                            used.add(a);
-                            break;
-                        }
+                    if (alphaIndex < remaining.length && cipherAlphabet.length < 26) {
+                        cipherAlphabet.push(remaining[alphaIndex++]);
                     }
                 }
-                
             } else if (type === 'k3') {
-                // K3: keyword + remaining alphabet, then reverse (matches Java logic)
-                const usedLetters = new Set();
-                
-                // Add keyword letters first
-                for (let c of keyword.toUpperCase()) {
-                    if (/[A-Z]/.test(c) && !usedLetters.has(c)) {
-                        plaintextAlphabet.push(c);
-                        usedLetters.add(c);
-                    }
-                }
-                
-                // Add remaining alphabet letters
-                for (let c = 'A'.charCodeAt(0); c <= 'Z'.charCodeAt(0); c++) {
-                    const letter = String.fromCharCode(c);
-                    if (!usedLetters.has(letter)) {
-                        plaintextAlphabet.push(letter);
-                    }
-                }
-                
-                // Cipher alphabet is plaintext alphabet reversed
-                cipherAlphabet = [...plaintextAlphabet].reverse();
+                // K3: keyword + reversed remaining alphabet
+                cipherAlphabet = [...cleanKeyword];
+                const remaining = plainAlphabet.filter(c => !cleanKeyword.includes(c)).reverse();
+                cipherAlphabet.push(...remaining);
             }
 
-            // Apply random shift (matches Java currentShift)
+            // Apply random shift
             const shift = Math.floor(Math.random() * 26);
             cipherAlphabet = cipherAlphabet.slice(shift).concat(cipherAlphabet.slice(0, shift));
 
-            // Fix self-mappings with the same logic as Java
-            let needFixing;
-            do {
-                needFixing = false;
-                for (let i = 0; i < 26; i++) {
-                    if (plaintextAlphabet[i] === cipherAlphabet[i]) {
-                        needFixing = true;
-                        // Find a position that doesn't have self-mapping after previous fixes
-                        for (let j = 0; j < 26; j++) {
-                            if (i !== j && 
-                                plaintextAlphabet[j] !== cipherAlphabet[i] && 
-                                plaintextAlphabet[i] !== cipherAlphabet[j]) {
-                                // Swap them
-                                [cipherAlphabet[i], cipherAlphabet[j]] = [cipherAlphabet[j], cipherAlphabet[i]];
-                                break;
-                            }
-                        }
-                    }
+            // Ensure no letter maps to itself
+            for (let i = 0; i < 26; i++) {
+                if (plainAlphabet[i] === cipherAlphabet[i]) {
+                    const swapIndex = (i + 1) % 26;
+                    [cipherAlphabet[i], cipherAlphabet[swapIndex]] = [cipherAlphabet[swapIndex], cipherAlphabet[i]];
                 }
-            } while (needFixing);
+            }
 
             const result = {};
             for (let i = 0; i < 26; i++) {
-                result[plaintextAlphabet[i]] = cipherAlphabet[i];
+                result[plainAlphabet[i]] = cipherAlphabet[i];
             }
             return result;
         }
