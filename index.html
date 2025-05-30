@@ -797,50 +797,59 @@ if (isXenocrypt) {
             return encoded.match(/.{1,5}/g).join(' ');
         }
 
-        function updateDisplay() {
-            const display = document.getElementById('cryptogramDisplay');
+       function updateDisplay() {
+    const display = document.getElementById('cryptogramDisplay');
+    
+    if (isAristocrat || isXenocrypt) {
+        const lines = splitIntoLines(encodedText, 60);
+        let html = '';
+        
+        // Alternate between cipher lines and substitution lines
+        lines.forEach(line => {
+            // Cipher line
+            html += '<div class="cipher-line">';
+            for (let c of line) {
+                html += `<span>${c}</span>`;
+            }
+            html += '</div>';
             
-            if (isAristocrat) {
-                const lines = splitIntoLines(encodedText, 60);
-                let html = '';
-                
-                lines.forEach(line => {
-                    html += '<div class="cipher-line">';
-                    for (let c of line) {
-                        html += `<span>${c}</span>`;
-                    }
-                    html += '</div>';
-                    
-                    html += '<div class="plain-line">';
-                    for (let c of line) {
-                        if (/[A-Z]/.test(c)) {
-                            if (guesses[c]) {
-                                html += `<span class="substitution-display">${guesses[c]}</span>`;
-                            } else {
-                                html += `<span class="underscore">_</span>`;
-                            }
-                        } else {
-                            html += `<span>${c}</span>`;
-                        }
-                    }
-                    html += '</div>';
-                });
-                
-                display.innerHTML = html;
-            } else {
-                html = '<div class="cipher-line">' + encodedText + '</div>';
-                html += '<div class="plain-line">';
-                for (let c of encodedText) {
+            // Substitution line immediately after each cipher line
+            html += '<div class="plain-line">';
+            for (let c of line) {
+                if (/[A-Z]/.test(c)) {
                     if (guesses[c]) {
                         html += `<span class="substitution-display">${guesses[c]}</span>`;
                     } else {
                         html += `<span class="underscore">_</span>`;
                     }
+                } else {
+                    // Preserve spaces and punctuation
+                    html += `<span>${c}</span>`;
                 }
-                html += '</div>';
-                display.innerHTML = html;
+            }
+            html += '</div>';
+        });
+        
+        display.innerHTML = html;
+    } else {
+        // Patristocrat - keep existing logic
+        let html = '<div class="cipher-line">' + encodedText + '</div>';
+        html += '<div class="plain-line">';
+        for (let c of encodedText) {
+            if (/[A-Z]/.test(c)) {
+                if (guesses[c]) {
+                    html += `<span class="substitution-display">${guesses[c]}</span>`;
+                } else {
+                    html += `<span class="underscore">_</span>`;
+                }
+            } else {
+                html += `<span>${c}</span>`;
             }
         }
+        html += '</div>';
+        display.innerHTML = html;
+    }
+}
 
         function splitIntoLines(text, maxLength) {
             const lines = [];
