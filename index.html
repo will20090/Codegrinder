@@ -418,7 +418,7 @@
             }, maxLoadTime);
 
             try {
-                updateLoadingMessage('Loading English quotes from quotes.json...');
+                updateLoadingMessage('Loading English quotes from quotes.txt...');
                 await loadEnglishQuotes();
                 
                 updateLoadingMessage('Loading Spanish quotes from spanishQuotes.txt...');
@@ -480,35 +480,24 @@
             filesLoaded = true;
         }
 
-        async function loadEnglishQuotes() {
-            try {
-                const response = await fetch('quotes.json');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-                
-                if (Array.isArray(data)) {
-                    englishQuotes = data.map(item => 
-                        typeof item === 'string' ? item.toUpperCase() : 
-                        (item.Quote || item.quote || item.text || item.content || '').toUpperCase()
-                    ).filter(quote => quote.length > 0);
-                } else if (data.quotes && Array.isArray(data.quotes)) {
-                    englishQuotes = data.quotes.map(item => 
-                        typeof item === 'string' ? item.toUpperCase() : 
-                        (item.Quote || item.quote || item.text || item.content || '').toUpperCase()
-                    ).filter(quote => quote.length > 0);
-                } else {
-                    throw new Error('Invalid JSON structure');
-                }
-                
-                if (englishQuotes.length === 0) {
-                    throw new Error('No valid quotes found in quotes.json');
-                }
-                
-            } catch (error) {
-                throw error;
-            }
+       async function loadEnglishQuotes() {
+    try {
+        const response = await fetch('quotes.txt');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const text = await response.text();
+        englishQuotes = text.split('\n')
+            .map(line => line.trim().toUpperCase())
+            .filter(line => line.length > 0);
+        
+        if (englishQuotes.length === 0) {
+            throw new Error('No valid quotes found in quotes.txt');
         }
+        
+    } catch (error) {
+        throw error;
+    }
+}
 
         async function loadSpanishQuotes() {
             try {
