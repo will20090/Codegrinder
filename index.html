@@ -921,20 +921,33 @@ if (isXenocrypt) {
     }
 
     function showHint() {
-        if (!firstWord) {
-            updateStatus('No hint available for this puzzle');
-            return;
-        }
-
-        const reverseCipher = {};
-        for (let [plain, cipher] of Object.entries(cipher)) {
-            reverseCipher[cipher] = plain;
-        }
-
-        const encodedFirstWord = firstWord.split('').map(c => cipher[c]).join('');
-        updateStatus(`Hint: The first word "${encodedFirstWord}" decodes to "${firstWord}"`);
+    if (!firstWord) {
+        updateStatus('No hint available for this puzzle');
+        return;
     }
 
+    const reverseCipher = {};
+    for (let [plain, cipher] of Object.entries(cipher)) {
+        reverseCipher[cipher] = plain;
+    }
+
+    const encodedFirstWord = firstWord.split('').map(c => cipher[c]).join('');
+    updateStatus(`Hint: The first word "${encodedFirstWord}" decodes to "${firstWord}"`);
+    
+    // Apply the hint to the input fields
+    for (let i = 0; i < firstWord.length; i++) {
+        const plainLetter = firstWord[i];
+        const cipherLetter = cipher[plainLetter];
+        if (cipherLetter && /[A-Z]/.test(plainLetter)) {
+            guesses[cipherLetter] = plainLetter;
+            const inputField = document.getElementById(`input-${cipherLetter}`);
+            if (inputField) inputField.value = plainLetter;
+        }
+    }
+    
+    updateDisplay();
+    updateFrequencyTable();
+}
     function guessKeyword() {
         if (!currentKeyword) {
             updateStatus('This puzzle was not generated with a keyword');
@@ -952,33 +965,36 @@ if (isXenocrypt) {
         }
     }
 
-    function revealAnswer() {
-        if (confirm('Are you sure you want to reveal the answer?')) {
-            const reverseCipher = {};
-            for (let [plain, cipher] of Object.entries(cipher)) {
-                reverseCipher[cipher] = plain;
-            }
-
-            guesses = {...reverseCipher};
-            
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const input = document.getElementById(`input-${letter}`);
-                if (input && reverseCipher[letter]) {
-                    input.value = reverseCipher[letter];
-                }
-            }
-
-            updateDisplay();
-            updateFrequencyTable();
-            
-            let statusMsg = `Answer: "${currentQuote}"`;
-            if (currentKeyword) {
-                statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
-            }
-            updateStatus(statusMsg);
+   function revealAnswer() {
+    if (confirm('Are you sure you want to reveal the answer?')) {
+        // Create reverse cipher mapping (cipher letter -> plain letter)
+        const reverseCipher = {};
+        for (let [plain, cipherLetter] of Object.entries(cipher)) {
+            reverseCipher[cipherLetter] = plain;
         }
+
+        // Update guesses object
+        guesses = {...reverseCipher};
+        
+        // Update all input fields
+        for (let i = 0; i < 26; i++) {
+            const cipherLetter = String.fromCharCode(65 + i);
+            const input = document.getElementById(`input-${cipherLetter}`);
+            if (input && reverseCipher[cipherLetter]) {
+                input.value = reverseCipher[cipherLetter];
+            }
+        }
+
+        updateDisplay();
+        updateFrequencyTable();
+        
+        let statusMsg = `Answer: "${currentQuote}"`;
+        if (currentKeyword) {
+            statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
+        }
+        updateStatus(statusMsg);
     }
+}
 
     function updateStatus(message) {
         document.getElementById('statusLabel').textContent = message;
