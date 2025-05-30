@@ -1104,6 +1104,14 @@
         filesLoaded = true;
         initializeGame();
     }
+        // Emergency fallback - show game after 3 seconds no matter what
+setTimeout(() => {
+    if (document.getElementById('gameContent').style.display === 'none') {
+        console.log('Emergency fallback: showing game content');
+        useFallbackData();
+        initializeGame();
+    }
+}, 3000);
     </script>
 </body>
 </html>
