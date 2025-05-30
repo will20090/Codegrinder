@@ -965,35 +965,33 @@ if (isXenocrypt) {
         }
     }
 
-   function revealAnswer() {
-    if (confirm('Are you sure you want to reveal the answer?')) {
-        // Create reverse cipher mapping (cipher letter -> plain letter)
-        const reverseCipher = {};
-        for (let [plain, cipherLetter] of Object.entries(cipher)) {
-            reverseCipher[cipherLetter] = plain;
-        }
+  function revealAnswer() {
+   // Create reverse cipher mapping (cipher letter -> plain letter)
+   const reverseCipher = {};
+   for (let [plain, cipherLetter] of Object.entries(cipher)) {
+       reverseCipher[cipherLetter] = plain;
+   }
 
-        // Update guesses object
-        guesses = {...reverseCipher};
-        
-        // Update all input fields
-        for (let i = 0; i < 26; i++) {
-            const cipherLetter = String.fromCharCode(65 + i);
-            const input = document.getElementById(`input-${cipherLetter}`);
-            if (input && reverseCipher[cipherLetter]) {
-                input.value = reverseCipher[cipherLetter];
-            }
-        }
+   // Update guesses object
+   guesses = {...reverseCipher};
+   
+   // Update all input fields
+   for (let i = 0; i < 26; i++) {
+       const cipherLetter = String.fromCharCode(65 + i);
+       const input = document.getElementById(`input-${cipherLetter}`);
+       if (input && reverseCipher[cipherLetter]) {
+           input.value = reverseCipher[cipherLetter];
+       }
+   }
 
-        updateDisplay();
-        updateFrequencyTable();
-        
-        let statusMsg = `Answer: "${currentQuote}"`;
-        if (currentKeyword) {
-            statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
-        }
-        updateStatus(statusMsg);
-    }
+   updateDisplay();
+   updateFrequencyTable();
+   
+   let statusMsg = `Answer: "${currentQuote}"`;
+   if (currentKeyword) {
+       statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
+   }
+   updateStatus(statusMsg);
 }
 
     function updateStatus(message) {
