@@ -688,8 +688,11 @@
                 cipher = generateKeywordCipher(currentKeyword, mappingType);
             }
 
-            encodedText = isAristocrat ? encodeAristocrat(currentQuote) : encodePatristocrat(currentQuote);
-
+if (isXenocrypt) {
+    encodedText = encodeAristocrat(currentQuote); // Xenocrypts use aristocrat encoding (with spaces)
+} else {
+    encodedText = isAristocrat ? encodeAristocrat(currentQuote) : encodePatristocrat(currentQuote);
+}
             for (let i = 0; i < 26; i++) {
                 const letter = String.fromCharCode(65 + i);
                 const input = document.getElementById(`input-${letter}`);
@@ -793,6 +796,7 @@
                 if (/[A-Za-z]/.test(c)) return cipher[c.toUpperCase()];
                 return '';
             }).join('');
+                return encoded.match(/.{1,5}/g).join(' ');
         }
 
         function updateDisplay() {
