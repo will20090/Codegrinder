@@ -295,13 +295,19 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 Codebusters Practice</h1>
-            
+   <div class="container">
+    <div class="header">
+        <h1>🔐 Codebusters Practice</h1>
+    </div>
+    
+    <div class="content">
+        <div id="loadingMessage" class="loading">Loading puzzle data...</div>
         
+        <div id="errorMessage" class="error" style="display: none;">
+            Could not load all data files. Using built-in fallback puzzles.
+        </div>
 
-            <div id="fileStats" class="file-stats" style="display: none;">
+        <div id="fileStats" class="file-stats" style="display: none;">
                 📊 Loaded: <span id="statsText"></span>
             </div>
 
@@ -381,6 +387,7 @@
             </div>
         </div>
     </div>
+</div>
 
     <script>
         // Game state
@@ -1050,7 +1057,7 @@
     }
 
     // Initialize the application with timeout fallback
-    window.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function() {
         // Set a maximum loading time of 2 seconds
         const loadingTimeout = setTimeout(() => {
             console.warn('Loading timeout - using fallback data');
