@@ -792,11 +792,13 @@ if (isXenocrypt) {
         }
 
         function encodePatristocrat(text) {
-            return text.split('').map(c => {
+            const encoded = text.split('').map(c => {
                 if (/[A-Za-z]/.test(c)) return cipher[c.toUpperCase()];
                 return '';
             }).join('');
-                return encoded.match(/.{1,5}/g).join(' ');
+            
+            // Group into blocks of 5
+            return encoded.match(/.{1,5}/g).join(' ');
         }
 
         function updateDisplay() {
