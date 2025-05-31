@@ -1,1 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hill 3x3 Cipher Practice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 6s infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .key-display {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .key-word {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #e8f4fd;
+            padding: 10px 20px;
+            border-radius: 10px;
+            letter-spacing: 3px;
+        }
+        .matrix-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .matrix-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 3px;
+            justify-content: center;
+            border: 2px solid #3498db;
+            padding: 10px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        .matrix-cell {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .matrices-display {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .cipher-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .cipher-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .cipher-letter {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #fff3cd;
+            padding: 8px 12px;
+            border-radius: 8px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .answer-box {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            background: white;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .answer-box:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info-text {
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0066cc;
+            font-size: 0.95em;
+        }
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            .key-display {
+                flex-direction: column;
+                align-items: center;
+            }
+            .key-word {
+                font-size: 1.5em;
+            }
+            .matrices-display {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .cipher-row {
+                justify-content: center;
+            }
+            .matrix {
+                grid-template-columns: repeat(3, 45px);
+                grid-template-rows: repeat(3, 45px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔢 Hill 3x3 Cipher</h1>
+        </div>
+        
+        <div class="content">
+            <div id="statusMessage" class="status" style="display: none;"></div>
+            
+            <div class="info-text">
+                <strong>Instructions:</strong> Use the inverse matrix to decrypt the cipher text back to plaintext. 
+                For 3x3 Hill cipher: decrypt by multiplying cipher pairs with the inverse matrix mod 26.
+            </div>
+            
+            <div class="section">
+                <h2>Key Matrix & Inverse</h2>
+                <div class="key-display">
+                    <div class="key-word" id="keyWord">ENDURANCE</div>
+                </div>
+                <div class="matrices-display">
+                    <div class="matrix-container">
+                        <div class="matrix-label"> = </div>
+                        <div class="matrix" id="keyMatrix">
+                            <div class="matrix-cell">4</div>
+                            <div class="matrix-cell">13</div>
+                            <div class="matrix-cell">3</div>
+                            <div class="matrix-cell">20</div>
+                            <div class="matrix-cell">17</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">13</div>
+                            <div class="matrix-cell">2</div>
+                            <div class="matrix-cell">4</div>
+                        </div>
+                    </div>
+                    <div class="matrix-container">
+                        <div class="matrix-label">Inverse Matrix (mod 26)</div>
+                        <div class="matrix" id="inverseMatrix">
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                            <div class="matrix-cell">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+            <div class="section">
+                <h2>Cipher Text</h2>
+                <div class="cipher-section" id="cipherSection">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
+                <button class="btn btn-success" onclick="checkAnswer()">Check Answer</button>
+                <button class="btn btn-danger" onclick="showSolution()">Show Solution</button>
+                <button class="btn btn-secondary" onclick="toggleDebug()">Debug Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentKey = 'ENDURANCE';
+        let currentMatrix = [4, 13, 3, 20, 17, 0, 13, 2, 4];
+        let currentInverse = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let currentCipher = '';
+        let currentPlaintext = '';
+        let currentOriginalText = '';
+        let hillWords = [];
+        let quotes = [];
+        let filesLoaded = false;
+        let debugMode = false;
+
+        // Default data as fallback
+        const defaultHillWords = ['ENDURANCE', 'KNOWLEDGE', 'EDUCATION', 'ADVENTURE', 'CHALLENGE'];
+        const defaultQuotes = [
+            "The quick brown fox jumps over the lazy dog.",
+            "Knowledge is power and education is the key to success.",
+            "Adventure awaits those who dare to explore the unknown.",
+            "Challenge yourself to grow beyond your comfort zone."
+        ];
+
+        function logDebug(message) {
+            if (debugMode) {
+                console.log(message);
+            }
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            showStatus(`Debug mode ${debugMode ? 'enabled' : 'disabled'}`, 'success');
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        async function loadFiles() {
+            logDebug('Starting file loading process...');
+            
+            // Initialize with defaults first
+            hillWords = [...defaultHillWords];
+            quotes = [...defaultQuotes];
+            logDebug(`Initialized with ${hillWords.length} default hill words and ${quotes.length} default quotes`);
+
+            try {
+                // Try to load hillWords3.txt
+                logDebug('Attempting to load hillWords3.txt...');
+                const hillWordsResponse = await fetch('hillWords3.txt');
+                if (hillWordsResponse.ok) {
+                    const hillWordsText = await hillWordsResponse.text();
+                    const loadedWords = hillWordsText
+                        .split(/[\r\n]+/)
+                        .map(word => word.trim().toUpperCase())
+                        .filter(word => word.length === 9 && /^[A-Z]+$/.test(word));
+                    
+                    if (loadedWords.length > 0) {
+                        hillWords = loadedWords;
+                        logDebug(`Successfully loaded ${hillWords.length} hill words from file`);
+                    }
+                }
+
+                // Try to load quotes.txt
+                logDebug('Attempting to load quotes.txt...');
+                const quotesResponse = await fetch('quotes.txt');
+                if (quotesResponse.ok) {
+                    const quotesText = await quotesResponse.text();
+                    const loadedQuotes = quotesText
+                        .split(/[\r\n]+/)
+                        .map(quote => quote.trim())
+                        .filter(quote => quote.length > 15);
+                    
+                    if (loadedQuotes.length > 0) {
+                        quotes = loadedQuotes;
+                        logDebug(`Successfully loaded ${quotes.length} quotes from file`);
+                    }
+                }
+
+                showStatus('Files loaded successfully!', 'success');
+            } catch (error) {
+                logDebug(`Error loading files: ${error.message}`);
+                showStatus('Using default data - files not found', 'warning');
+            }
+
+            filesLoaded = true;
+            generateNewProblem();
+        }
+
+        function letterToNumber(letter) {
+            return letter.charCodeAt(0) - 65;
+        }
+
+        function numberToLetter(num) {
+            return String.fromCharCode(((num % 26) + 26) % 26 + 65);
+        }
+
+        function generateKeyMatrix(word) {
+            const matrix = [];
+            for (let i = 0; i < 9; i++) {
+                matrix.push(letterToNumber(word[i]));
+            }
+            return matrix;
+        }
+
+        function modInverse(a, m) {
+            a = ((a % m) + m) % m;
+            for (let x = 1; x < m; x++) {
+                if ((a * x) % m === 1) {
+                    return x;
+                }
+            }
+            return null;
+        }
+
+        function determinant3x3(matrix) {
+            const [a, b, c, d, e, f, g, h, i] = matrix;
+            return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+        }
+
+        function matrixMinor(matrix, row, col) {
+            const minor = [];
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (i !== row && j !== col) {
+                        minor.push(matrix[i * 3 + j]);
+                    }
+                }
+            }
+            return minor[0] * minor[3] - minor[1] * minor[2];
+        }
+
+        function calculateInverseMatrix(matrix) {
+            const det = determinant3x3(matrix);
+            const detMod = ((det % 26) + 26) % 26;
+            const detInv = modInverse(detMod, 26);
+            
+            if (!detInv) {
+                logDebug(`Matrix not invertible: determinant ${detMod} has no inverse mod 26`);
+                return null;
+            }
+
+            logDebug(`Determinant: ${det} -> ${detMod} mod 26, inverse: ${detInv}`);
+
+            const adjugate = [];
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    const minor = matrixMinor(matrix, i, j);
+                    const cofactor = ((i + j) % 2 === 0) ? minor : -minor;
+                    // Transpose: adjugate[j*3+i] instead of adjugate[i*3+j]
+                    adjugate[j * 3 + i] = ((cofactor % 26) + 26) % 26;
+                }
+            }
+
+            const inverse = adjugate.map(val => (val * detInv) % 26);
+            logDebug(`Calculated inverse matrix: [${inverse.join(', ')}]`);
+            return inverse;
+        }
+
+        function isValidMatrix(matrix) {
+            const det = determinant3x3(matrix);
+            const detMod = ((det % 26) + 26) % 26;
+            const hasInverse = modInverse(detMod, 26) !== null;
+            logDebug(`Matrix validity check: det=${det}, detMod=${detMod}, hasInverse=${hasInverse}`);
+            return hasInverse;
+        }
+
+        function findSuitableCipher() {
+            logDebug(`Finding suitable cipher from ${quotes.length} available quotes...`);
+            const maxAttempts = 100;
+            let attempts = 0;
+            
+            while (attempts < maxAttempts) {
+                const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                logDebug(`Attempt ${attempts + 1}: trying quote "${quote.substring(0, 50)}..."`);
+                
+                const words = quote.replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter(word => word.length > 0);
+                
+                // Try different combinations of consecutive words
+                for (let start = 0; start < words.length; start++) {
+                    let combined = '';
+                    for (let end = start; end < words.length; end++) {
+                        if (end > start) combined += ' ';
+                        combined += words[end];
+                        
+                        const letterCount = combined.replace(/\s/g, '').length;
+                        if (letterCount >= 12 && letterCount <= 24) {
+                            logDebug(`Found suitable text: "${combined}" (${letterCount} letters)`);
+                            return {
+                                original: combined,
+                                letters: combined.replace(/\s/g, '').toUpperCase()
+                            };
+                        }
+                        if (letterCount > 24) break;
+                    }
+                }
+                attempts++;
+            }
+            
+            // Fallback
+            logDebug('Using fallback cipher text');
+            return {
+                original: "THE QUICK BROWN FOX JUMPS",
+                letters: "THEQUICKBROWNFOXJUMPS"
+            };
+        }
+
+        function encryptWithHill3x3(plaintext, matrix) {
+            logDebug(`Encrypting "${plaintext}" with 3x3 matrix`);
+            const encrypted = [];
+            
+            // Pad with X to make length multiple of 3
+            while (plaintext.length % 3 !== 0) {
+                plaintext += 'X';
+            }
+            logDebug(`Padded plaintext: "${plaintext}"`);
+            
+            for (let i = 0; i < plaintext.length; i += 3) {
+                const p1 = letterToNumber(plaintext[i]);
+                const p2 = letterToNumber(plaintext[i + 1]);
+                const p3 = letterToNumber(plaintext[i + 2]);
+                
+                const c1 = (matrix[0] * p1 + matrix[1] * p2 + matrix[2] * p3) % 26;
+                const c2 = (matrix[3] * p1 + matrix[4] * p2 + matrix[5] * p3) % 26;
+                const c3 = (matrix[6] * p1 + matrix[7] * p2 + matrix[8] * p3) % 26;
+                
+                encrypted.push(numberToLetter(c1));
+                encrypted.push(numberToLetter(c2));
+                encrypted.push(numberToLetter(c3));
+            }
+            
+            const result = encrypted.join('');
+            logDebug(`Encrypted result: "${result}"`);
+            return result;
+        }
+
+        function generateNewProblem() {
+            if (!filesLoaded) {
+                logDebug('Files not loaded yet, waiting...');
+                return;
+            }
+
+            logDebug('Generating new 3x3 Hill cipher problem...');
+
+            // Find a valid key word
+            let attempts = 0;
+            do {
+                currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
+                currentMatrix = generateKeyMatrix(currentKey);
+                attempts++;
+                logDebug(`Attempt ${attempts}: trying key "${currentKey}"`);
+            } while (!isValidMatrix(currentMatrix) && attempts < 100);
+
+            if (attempts >= 100) {
+                showStatus('Could not find valid matrix, using default', 'warning');
+                currentKey = 'ENDURANCE';
+                currentMatrix = [4, 13, 3, 20, 17, 0, 13, 2, 4];
+            }
+
+            // Calculate inverse matrix
+            currentInverse = calculateInverseMatrix(currentMatrix);
+            if (!currentInverse) {
+                showStatus('Error calculating inverse matrix', 'error');
+                return;
+            }
+
+            logDebug(`Selected key: "${currentKey}"`);
+            logDebug(`Matrix: [${currentMatrix.join(', ')}]`);
+            logDebug(`Inverse: [${currentInverse.join(', ')}]`);
+            
+            // Find suitable cipher text
+            const cipherData = findSuitableCipher();
+            currentOriginalText = cipherData.original;
+            currentPlaintext = cipherData.letters;
+            currentCipher = encryptWithHill3x3(currentPlaintext, currentMatrix);
+            
+            logDebug(`Original text: "${currentOriginalText}"`);
+            logDebug(`Plaintext: "${currentPlaintext}"`);
+            logDebug(`Ciphertext: "${currentCipher}"`);
+            
+            // Update display
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update key word
+            document.getElementById('keyWord').textContent = currentKey;
+            
+            // Update original matrix
+            const matrixCells = document.querySelectorAll('#keyMatrix .matrix-cell');
+            matrixCells.forEach((cell, index) => {
+                cell.textContent = currentMatrix[index];
+            });
+            
+            // Update inverse matrix
+            const inverseCells = document.querySelectorAll('#inverseMatrix .matrix-cell');
+            inverseCells.forEach((cell, index) => {
+                cell.textContent = currentInverse[index];
+            });
+            
+            // Update cipher text with aligned input boxes
+            const cipherSection = document.getElementById('cipherSection');
+            cipherSection.innerHTML = '';
+            
+            // Create cipher row
+            const cipherRow = document.createElement('div');
+            cipherRow.className = 'cipher-row';
+            
+            for (let i = 0; i < currentCipher.length; i++) {
+                const letterDiv = document.createElement('div');
+                letterDiv.className = 'cipher-letter';
+                letterDiv.textContent = currentCipher[i];
+                cipherRow.appendChild(letterDiv);
+            }
+            
+            cipherSection.appendChild(cipherRow);
+            
+            // Create answer row
+            const answerRow = document.createElement('div');
+            answerRow.className = 'cipher-row';
+            
+            for (let i = 0; i < currentCipher.length; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'answer-box';
+                input.maxLength = 1;
+                input.dataset.index = i;
+                
+                input.addEventListener('input', function(e) {
+                    const value = e.target.value.toUpperCase();
+                    if (value.match(/[A-Z]/)) {
+                        e.target.value = value;
+                        // Move to next box
+                        const nextBox = document.querySelector(`input[data-index="${parseInt(e.target.dataset.index) + 1}"]`);
+                        if (nextBox) nextBox.focus();
+                    } else {
+                        e.target.value = '';
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !e.target.value) {
+                        const prevBox = document.querySelector(`input[data-index="${parseInt(e.target.dataset.index) - 1}"]`);
+                        if (prevBox) prevBox.focus();
+                    }
+                });
+                
+                answerRow.appendChild(input);
+            }
+            
+            cipherSection.appendChild(answerRow);
+        }
+
+        function checkAnswer() {
+            const inputs = document.querySelectorAll('.answer-box');
+            let userAnswer = '';
+            
+            inputs.forEach(input => {
+                userAnswer += input.value || '_';
+            });
+            
+            logDebug(`User answer: "${userAnswer}"`);
+            logDebug(`Correct answer: "${currentPlaintext}"`);
+            
+            let correct = 0;
+            let total = currentPlaintext.length;
+            
+            inputs.forEach((input, index) => {
+                if (index < currentPlaintext.length) {
+                    if (input.value.toUpperCase() === currentPlaintext[index]) {
+                        input.style.backgroundColor = '#d4edda';
+                        input.style.borderColor = '#28a745';
+                        correct++;
+                    } else {
+                        input.style.backgroundColor = '#f8d7da';
+                        input.style.borderColor = '#dc3545';
+                    }
+                }
+            });
+            
+            const score = Math.round((correct / total) * 100);
+            showStatus(`Score: ${score}% (${correct}/${total} correct)`, score === 100 ? 'success' : 'warning');
+            
+            // Reset colors after a delay
+            setTimeout(() => {
+                inputs.forEach(input => {
+                    input.style.backgroundColor = '';
+                    input.style.borderColor = '';
+                });
+            }, 3000);
+        }
+
+        function showSolution() {
+            const inputs = document.querySelectorAll('.answer-box');
+            inputs.forEach((input, index) => {
+                if (index < currentPlaintext.length) {
+                    input.value = currentPlaintext[index];
+                }
+            });
+            showStatus('Solution revealed!', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            logDebug('Page loaded, starting initialization...');
+            loadFiles();
+        });
+    </script>
+</body>
+</html>
