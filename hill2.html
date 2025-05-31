@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hill 2x2 Cipher Practice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 6s infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .key-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .key-word {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #e8f4fd;
+            padding: 10px 20px;
+            border-radius: 10px;
+            letter-spacing: 3px;
+        }
+        .matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 60px);
+            grid-template-rows: repeat(2, 60px);
+            gap: 5px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .matrix-cell {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .cipher-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .cipher-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            justify-content: center;
+        }
+        .cipher-letter {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #fff3cd;
+            padding: 8px 12px;
+            border-radius: 8px;
+            min-width: 40px;
+            text-align: center;
+        }
+        .answer-box {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #3498db;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            background: white;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .answer-box:focus {
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+        .answer-box.placeholder {
+            background: rgba(52, 152, 219, 0.1);
+            border-style: dashed;
+            color: #7f8c8d;
+        }
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            .key-display {
+                flex-direction: column;
+                align-items: center;
+            }
+            .key-word {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔢 Hill 2x2 Cipher</h1>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>Key Matrix</h2>
+                <div class="key-display">
+                    <div class="key-word" id="keyWord">ABLE</div>
+                    <div class="matrix" id="keyMatrix">
+                        <div class="matrix-cell">0</div>
+                        <div class="matrix-cell">1</div>
+                        <div class="matrix-cell">11</div>
+                        <div class="matrix-cell">4</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Cipher Text</h2>
+                <div class="cipher-section" id="cipherSection">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
+                <button class="btn btn-secondary" onclick="checkAnswer()">Check Answer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentKey = 'ABLE';
+        let currentMatrix = [0, 1, 11, 4];
+        let currentCipher = '';
+        let currentPlaintext = '';
+        let hillWords = [];
+        let quotes = [];
+
+        // Sample data (will be replaced by file loading)
+        const defaultHillWords = ['ABLE', 'CAKE', 'DIED', 'EDGE', 'FROG', 'GOLF', 'HELP', 'JOKE', 'KING', 'LION', 'MOON', 'NOTE', 'OPEN', 'PARK', 'QUIT', 'ROSE', 'SAND', 'TIME', 'UNIT', 'VASE', 'WAVE', 'YEAR', 'ZONE', 'BIRD'];
+        
+        const defaultQuotes = [
+            "The quick brown fox jumps over the lazy dog",
+            "To be or not to be that is the question",
+            "All that glitters is not gold",
+            "Better late than never",
+            "Actions speak louder than words",
+            "A picture is worth a thousand words",
+            "Beauty is in the eye of the beholder",
+            "The pen is mightier than the sword",
+            "Where there is a will there is a way",
+            "Knowledge is power and power corrupts",
+            "Time heals all wounds but scars remain",
+            "Fortune favors the bold and brave",
+            "Practice makes perfect in all things",
+            "Honesty is the best policy always",
+            "Patience is a virtue worth cultivating"
+        ];
+
+        async function loadFiles() {
+            try {
+                // Try to load hillWords2.txt
+                try {
+                    const hillWordsData = await window.fs.readFile('hillWords2.txt', { encoding: 'utf8' });
+                    hillWords = hillWordsData.split('\n').map(word => word.trim().toUpperCase()).filter(word => word.length === 4);
+                } catch (e) {
+                    console.log('Using default hill words');
+                    hillWords = defaultHillWords;
+                }
+
+                // Try to load quotes.txt
+                try {
+                    const quotesData = await window.fs.readFile('quotes.txt', { encoding: 'utf8' });
+                    quotes = quotesData.split('\n').map(quote => quote.trim()).filter(quote => quote.length > 0);
+                } catch (e) {
+                    console.log('Using default quotes');
+                    quotes = defaultQuotes;
+                }
+            } catch (e) {
+                console.log('File system not available, using defaults');
+                hillWords = defaultHillWords;
+                quotes = defaultQuotes;
+            }
+
+            generateNewProblem();
+        }
+
+        function letterToNumber(letter) {
+            return letter.charCodeAt(0) - 65;
+        }
+
+        function numberToLetter(num) {
+            return String.fromCharCode((num % 26) + 65);
+        }
+
+        function generateKeyMatrix(word) {
+            const matrix = [];
+            for (let i = 0; i < 4; i++) {
+                matrix.push(letterToNumber(word[i]));
+            }
+            return matrix;
+        }
+
+        function findSuitableCipher() {
+            const maxAttempts = 100;
+            let attempts = 0;
+            
+            while (attempts < maxAttempts) {
+                const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                const words = quote.replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter(word => word.length > 0);
+                
+                // Try different combinations of consecutive words
+                for (let start = 0; start < words.length; start++) {
+                    let combined = '';
+                    for (let end = start; end < words.length; end++) {
+                        if (end > start) combined += ' ';
+                        combined += words[end];
+                        
+                        const letterCount = combined.replace(/\s/g, '').length;
+                        if (letterCount >= 10 && letterCount <= 20) {
+                            return {
+                                text: combined,
+                                letters: combined.replace(/\s/g, '').toUpperCase()
+                            };
+                        }
+                        if (letterCount > 20) break;
+                    }
+                }
+                attempts++;
+            }
+            
+            // Fallback
+            return {
+                text: "QUICK BROWN FOX",
+                letters: "QUICKBROWNFOX"
+            };
+        }
+
+        function encryptWithHill(plaintext, matrix) {
+            const encrypted = [];
+            
+            // Pad with X if odd length
+            if (plaintext.length % 2 !== 0) {
+                plaintext += 'X';
+            }
+            
+            for (let i = 0; i < plaintext.length; i += 2) {
+                const p1 = letterToNumber(plaintext[i]);
+                const p2 = letterToNumber(plaintext[i + 1]);
+                
+                const c1 = (matrix[0] * p1 + matrix[1] * p2) % 26;
+                const c2 = (matrix[2] * p1 + matrix[3] * p2) % 26;
+                
+                encrypted.push(numberToLetter(c1));
+                encrypted.push(numberToLetter(c2));
+            }
+            
+            return encrypted.join('');
+        }
+
+        function generateNewProblem() {
+            // Select random key word
+            currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
+            currentMatrix = generateKeyMatrix(currentKey);
+            
+            // Find suitable cipher text
+            const cipherData = findSuitableCipher();
+            currentPlaintext = cipherData.letters;
+            currentCipher = encryptWithHill(currentPlaintext, currentMatrix);
+            
+            // Update display
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update key word
+            document.getElementById('keyWord').textContent = currentKey;
+            
+            // Update matrix
+            const matrixCells = document.querySelectorAll('.matrix-cell');
+            matrixCells.forEach((cell, index) => {
+                cell.textContent = currentMatrix[index];
+            });
+            
+            // Update cipher text with aligned input boxes
+            const cipherSection = document.getElementById('cipherSection');
+            cipherSection.innerHTML = '';
+            
+            // Create cipher row
+            const cipherRow = document.createElement('div');
+            cipherRow.className = 'cipher-row';
+            
+            for (let i = 0; i < currentCipher.length; i++) {
+                const letterDiv = document.createElement('div');
+                letterDiv.className = 'cipher-letter';
+                letterDiv.textContent = currentCipher[i];
+                cipherRow.appendChild(letterDiv);
+            }
+            
+            cipherSection.appendChild(cipherRow);
+            
+            // Create answer row
+            const answerRow = document.createElement('div');
+            answerRow.className = 'cipher-row';
+            
+            for (let i = 0; i < currentCipher.length; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'answer-box';
+                input.maxLength = 1;
+                input.dataset.index = i;
+                
+                input.addEventListener('input', function(e) {
+                    const value = e.target.value.toUpperCase();
+                    if (value.match(/[A-Z]/)) {
+                        e.target.value = value;
+                        // Move to next box
+                        const nextBox = document.querySelector(`input[data-index="${parseInt(e.target.dataset.index) + 1}"]`);
+                        if (nextBox) nextBox.focus();
+                    } else {
+                        e.target.value = '';
+                    }
+                });
+                
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Backspace' && !e.target.value) {
+                        const prevBox = document.querySelector(`input[data-index="${parseInt(e.target.dataset.index) - 1}"]`);
+                        if (prevBox) prevBox.focus();
+                    }
+                });
+                
+                answerRow.appendChild(input);
+            }
+            
+            cipherSection.appendChild(answerRow);
+        }
+
+        function checkAnswer() {
+            const inputs = document.querySelectorAll('.answer-box');
+            let userAnswer = '';
+            
+            inputs.forEach(input => {
+                userAnswer += input.value || '_';
+            });
+            
+            let correct = 0;
+            let total = currentPlaintext.length;
+            
+            inputs.forEach((input, index) => {
+                if (index < currentPlaintext.length) {
+                    if (input.value.toUpperCase() === currentPlaintext[index]) {
+                        input.style.backgroundColor = '#d4edda';
+                        input.style.borderColor = '#28a745';
+                        correct++;
+                    } else {
+                        input.style.backgroundColor = '#f8d7da';
+                        input.style.borderColor = '#dc3545';
+                    }
+                }
+            });
+            
+            const score = Math.round((correct / total) * 100);
+            alert(`Score: ${score}% (${correct}/${total} correct)\nCorrect answer: ${currentPlaintext}`);
+            
+            // Reset colors after a delay
+            setTimeout(() => {
+                inputs.forEach(input => {
+                    input.style.backgroundColor = '';
+                    input.style.borderColor = '';
+                });
+            }, 3000);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', loadFiles);
+    </script>
+</body>
+</html>
