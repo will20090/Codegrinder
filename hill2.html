@@ -204,6 +204,23 @@
             color: #856404;
             border: 1px solid #ffeaa7;
         }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.8em;
+            color: #495057;
+            max-height: 150px;
+            overflow-y: auto;
+        }
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -250,7 +267,10 @@
             <div class="control-buttons">
                 <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
                 <button class="btn btn-secondary" onclick="checkAnswer()">Check Answer</button>
+                <button class="btn btn-secondary" onclick="toggleDebug()">Debug Info</button>
             </div>
+
+            <div id="debugInfo" class="debug-info" style="display: none;"></div>
         </div>
     </div>
 
@@ -262,13 +282,32 @@
         let hillWords = [];
         let quotes = [];
         let filesLoaded = false;
+        let debugMode = false;
 
         // Default data as fallback
         const defaultHillWords = ['EROR'];
         
         const defaultQuotes = [
-            "Files loaded wrong."
+            "File loaded wrong."
         ];
+
+        function logDebug(message) {
+            console.log(message);
+            if (debugMode) {
+                const debugEl = document.getElementById('debugInfo');
+                debugEl.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '\n';
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const debugEl = document.getElementById('debugInfo');
+            debugEl.style.display = debugMode ? 'block' : 'none';
+            if (debugMode) {
+                debugEl.innerHTML = 'Debug mode enabled\n';
+            }
+        }
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('statusMessage');
@@ -282,73 +321,99 @@
         }
 
         async function loadFiles() {
-            let hillWordsLoaded = false;
-            let quotesLoaded = false;
-
+            logDebug('Starting file loading process...');
+            
             // Initialize with defaults first
             hillWords = [...defaultHillWords];
             quotes = [...defaultQuotes];
+            logDebug(`Initialized with ${hillWords.length} default hill words and ${quotes.length} default quotes`);
 
             // Check if file system is available
             if (typeof window.fs === 'undefined') {
+                logDebug('window.fs is undefined - file system not available');
                 showStatus('File system not available. Using default data.', 'warning');
                 filesLoaded = true;
                 generateNewProblem();
                 return;
             }
 
+            logDebug('window.fs is available, attempting to load files...');
+
+            let hillWordsLoaded = false;
+            let quotesLoaded = false;
+
             try {
                 // Try to load hillWords2.txt
+                logDebug('Attempting to load hillWords2.txt...');
                 try {
                     const hillWordsData = await window.fs.readFile('hillWords2.txt', { encoding: 'utf8' });
+                    logDebug(`Raw hill words data length: ${hillWordsData.length} characters`);
+                    
                     const loadedWords = hillWordsData
                         .split(/[\r\n]+/)
                         .map(word => word.trim().toUpperCase())
                         .filter(word => word.length === 4 && /^[A-Z]+$/.test(word));
                     
+                    logDebug(`Processed ${loadedWords.length} valid hill words from file`);
+                    logDebug(`First few words: ${loadedWords.slice(0, 5).join(', ')}`);
+                    
                     if (loadedWords.length > 0) {
                         hillWords = loadedWords;
                         hillWordsLoaded = true;
-                        console.log(`Loaded ${hillWords.length} hill words from file`);
+                        logDebug(`Successfully loaded ${hillWords.length} hill words from file`);
+                    } else {
+                        logDebug('No valid hill words found in file');
                     }
                 } catch (e) {
-                    console.log('Could not load hillWords2.txt:', e.message);
+                    logDebug(`Failed to load hillWords2.txt: ${e.message}`);
                 }
 
                 // Try to load quotes.txt
+                logDebug('Attempting to load quotes.txt...');
                 try {
                     const quotesData = await window.fs.readFile('quotes.txt', { encoding: 'utf8' });
+                    logDebug(`Raw quotes data length: ${quotesData.length} characters`);
+                    
                     const loadedQuotes = quotesData
                         .split(/[\r\n]+/)
                         .map(quote => quote.trim())
                         .filter(quote => quote.length > 10);
                     
+                    logDebug(`Processed ${loadedQuotes.length} valid quotes from file`);
+                    logDebug(`First quote: "${loadedQuotes[0] || 'none'}"`);
+                    
                     if (loadedQuotes.length > 0) {
                         quotes = loadedQuotes;
                         quotesLoaded = true;
-                        console.log(`Loaded ${quotes.length} quotes from file`);
+                        logDebug(`Successfully loaded ${quotes.length} quotes from file`);
+                    } else {
+                        logDebug('No valid quotes found in file');
                     }
                 } catch (e) {
-                    console.log('Could not load quotes.txt:', e.message);
+                    logDebug(`Failed to load quotes.txt: ${e.message}`);
                 }
 
                 // Show status message
                 if (hillWordsLoaded && quotesLoaded) {
                     showStatus('Successfully loaded both hillWords2.txt and quotes.txt!', 'success');
+                    logDebug('Both files loaded successfully');
                 } else if (hillWordsLoaded || quotesLoaded) {
                     const loaded = hillWordsLoaded ? 'hillWords2.txt' : 'quotes.txt';
                     const failed = hillWordsLoaded ? 'quotes.txt' : 'hillWords2.txt';
                     showStatus(`Loaded ${loaded}. Using defaults for ${failed}.`, 'warning');
+                    logDebug(`Partial loading: ${loaded} succeeded, ${failed} failed`);
                 } else {
                     showStatus('Could not load files. Using default data.', 'warning');
+                    logDebug('Both files failed to load, using defaults');
                 }
 
             } catch (e) {
-                console.log('Error during file loading:', e);
-                showStatus('Error loading files. Using default data.', 'warning');
+                logDebug(`Error during file loading: ${e.message}`);
+                showStatus('Error loading files. Using default data.', 'error');
             }
 
             filesLoaded = true;
+            logDebug('File loading process completed, generating first problem...');
             generateNewProblem();
         }
 
@@ -369,11 +434,14 @@
         }
 
         function findSuitableCipher() {
+            logDebug(`Finding suitable cipher from ${quotes.length} available quotes...`);
             const maxAttempts = 100;
             let attempts = 0;
             
             while (attempts < maxAttempts) {
                 const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                logDebug(`Attempt ${attempts + 1}: trying quote "${quote.substring(0, 50)}..."`);
+                
                 const words = quote.replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter(word => word.length > 0);
                 
                 // Try different combinations of consecutive words
@@ -385,6 +453,7 @@
                         
                         const letterCount = combined.replace(/\s/g, '').length;
                         if (letterCount >= 10 && letterCount <= 20) {
+                            logDebug(`Found suitable text: "${combined}" (${letterCount} letters)`);
                             return {
                                 text: combined,
                                 letters: combined.replace(/\s/g, '').toUpperCase()
@@ -397,6 +466,7 @@
             }
             
             // Fallback
+            logDebug('Using fallback cipher text');
             return {
                 text: "QUICK BROWN FOX",
                 letters: "QUICKBROWNFOX"
@@ -404,11 +474,13 @@
         }
 
         function encryptWithHill(plaintext, matrix) {
+            logDebug(`Encrypting "${plaintext}" with matrix [${matrix.join(', ')}]`);
             const encrypted = [];
             
             // Pad with X if odd length
             if (plaintext.length % 2 !== 0) {
                 plaintext += 'X';
+                logDebug(`Padded plaintext to: "${plaintext}"`);
             }
             
             for (let i = 0; i < plaintext.length; i += 2) {
@@ -422,23 +494,31 @@
                 encrypted.push(numberToLetter(c2));
             }
             
-            return encrypted.join('');
+            const result = encrypted.join('');
+            logDebug(`Encrypted result: "${result}"`);
+            return result;
         }
 
         function generateNewProblem() {
             if (!filesLoaded) {
-                console.log('Files not loaded yet, waiting...');
+                logDebug('Files not loaded yet, waiting...');
                 return;
             }
+
+            logDebug('Generating new problem...');
 
             // Select random key word
             currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
             currentMatrix = generateKeyMatrix(currentKey);
+            logDebug(`Selected key: "${currentKey}" -> matrix [${currentMatrix.join(', ')}]`);
             
             // Find suitable cipher text
             const cipherData = findSuitableCipher();
             currentPlaintext = cipherData.letters;
             currentCipher = encryptWithHill(currentPlaintext, currentMatrix);
+            
+            logDebug(`Final plaintext: "${currentPlaintext}"`);
+            logDebug(`Final ciphertext: "${currentCipher}"`);
             
             // Update display
             updateDisplay();
@@ -515,6 +595,9 @@
                 userAnswer += input.value || '_';
             });
             
+            logDebug(`User answer: "${userAnswer}"`);
+            logDebug(`Correct answer: "${currentPlaintext}"`);
+            
             let correct = 0;
             let total = currentPlaintext.length;
             
@@ -544,7 +627,10 @@
         }
 
         // Initialize on load
-        window.addEventListener('load', loadFiles);
+        window.addEventListener('load', () => {
+            logDebug('Page loaded, starting initialization...');
+            loadFiles();
+        });
     </script>
 </body>
 </html>
