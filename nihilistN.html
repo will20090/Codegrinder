@@ -1,1 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nihilist Cipher Practice</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 6s infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .keywords-display {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .keyword-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .keyword-label {
+            font-weight: bold;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+        .keyword-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            background: #e8f4fd;
+            padding: 8px 16px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+        }
+        .polybius-square {
+            display: grid;
+            grid-template-columns: 40px repeat(5, 50px);
+            grid-template-rows: 40px repeat(5, 50px);
+            gap: 2px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .polybius-header {
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+        .polybius-cell {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .polybius-cell:hover {
+            background: #e3f2fd;
+            border-color: #3498db;
+        }
+        .polybius-cell input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #2c3e50;
+            outline: none;
+        }
+        .quote-display {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 1.1em;
+            line-height: 1.6;
+            color: #2c3e50;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        .cipher-text {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #856404;
+            word-spacing: 10px;
+        }
+        .answer-section {
+            margin-top: 20px;
+        }
+        .answer-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+        .answer-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+            grid-column: 1 / -1;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #27ae60, #229954);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            grid-column: 1 / -1;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 40px;
+        }
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .polybius-square {
+                grid-template-columns: 30px repeat(5, 40px);
+                grid-template-rows: 30px repeat(5, 40px);
+            }
+        }
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            .keyword-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .keyword-value {
+                font-size: 1.2em;
+            }
+            .control-buttons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Nihilist Cipher</h1>
+        </div>
+        
+        <div class="content">
+            <div id="statusMessage" class="status" style="display: none;"></div>
+            
+            <div class="left-column">
+                <div class="section">
+                    <h2>Keywords</h2>
+                    <div class="keywords-display">
+                        <div class="keyword-row">
+                            <span class="keyword-label">Polybius Key:</span>
+                            <span class="keyword-value" id="polybiusKey">LOADING</span>
+                        </div>
+                        <div class="keyword-row">
+                            <span class="keyword-label">Cipher Key:</span>
+                            <span class="keyword-value" id="cipherKey">LOADING</span>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="section">
+                    <h2>Polybius Square</h2>
+                    <div class="polybius-square" id="polybiusSquare">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+
+
+                <div class="section">
+                    <h2>Encrypted Text</h2>
+                    <div class="cipher-text" id="encryptedText">
+                        <div class="loading">Generating cipher...</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Your Answer</h2>
+                    <div class="answer-section">
+                        <textarea 
+                            class="answer-input" 
+                            id="userAnswer" 
+                            placeholder="Enter your decrypted text here..."
+                        ></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
+                <button class="btn btn-success" onclick="checkAnswer()">Check Answer</button>
+                <button class="btn btn-danger" onclick="showSolution()">Show Solution</button>
+                <button class="btn btn-secondary" onclick="resetPolybiusSquare()">Clear Square</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPolybiusKey = '';
+        let currentCipherKey = '';
+        let currentQuote = '';
+        let currentPlaintext = '';
+        let currentCiphertext = '';
+        let polybiusSquare = {};
+        let words = [];
+        let quotes = [];
+        let filesLoaded = false;
+
+        // Default data as fallback
+        const defaultWords = ['KEYBOARD', 'MONITOR', 'CIPHER', 'SECRET', 'PUZZLE'];
+        const defaultQuotes = [
+            "The only way to do great work is to love what you do.",
+            "Innovation distinguishes between a leader and a follower.",
+            "Stay hungry, stay foolish.",
+            "The future belongs to those who believe in the beauty of their dreams."
+        ];
+
+        function logDebug(message) {
+            console.log(message);
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        async function loadFiles() {
+            logDebug('Starting file loading process...');
+            
+            // Initialize with defaults first
+            words = [...defaultWords];
+            quotes = [...defaultQuotes];
+            logDebug(`Initialized with ${words.length} default words and ${quotes.length} default quotes`);
+
+            try {
+                // Try to load words.txt
+                logDebug('Attempting to load words.txt...');
+                const wordsResponse = await fetch('words.txt');
+                if (wordsResponse.ok) {
+                    const wordsText = await wordsResponse.text();
+                    const loadedWords = wordsText
+                        .split(/[\r\n]+/)
+                        .map(word => word.trim().toUpperCase())
+                        .filter(word => word.length >= 4 && /^[A-Z]+$/.test(word));
+                    
+                    if (loadedWords.length > 0) {
+                        words = loadedWords;
+                        logDebug(`Successfully loaded ${words.length} words from file`);
+                    }
+                }
+
+                // Try to load quotes.txt
+                logDebug('Attempting to load quotes.txt...');
+                const quotesResponse = await fetch('quotes.txt');
+                if (quotesResponse.ok) {
+                    const quotesText = await quotesResponse.text();
+                    const loadedQuotes = quotesText
+                        .split(/[\r\n]+/)
+                        .map(quote => quote.trim())
+                        .filter(quote => quote.length > 20);
+                    
+                    if (loadedQuotes.length > 0) {
+                        quotes = loadedQuotes;
+                        logDebug(`Successfully loaded ${quotes.length} quotes from file`);
+                    }
+                }
+
+                showStatus('Files loaded successfully!', 'success');
+            } catch (error) {
+                logDebug(`Error loading files: ${error.message}`);
+                showStatus('Using default data - files not found', 'warning');
+            }
+
+            filesLoaded = true;
+            generateNewProblem();
+        }
+
+        function createPolybiusSquare(keyword) {
+            // Remove duplicates and create alphabet
+            const uniqueLetters = [...new Set(keyword.replace(/J/g, 'I'))];
+            const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'; // I/J combined
+            const remainingLetters = alphabet.split('').filter(letter => !uniqueLetters.includes(letter));
+            const squareLetters = [...uniqueLetters, ...remainingLetters];
+            
+            const square = {};
+            for (let i = 0; i < 25; i++) {
+                const row = Math.floor(i / 5) + 1;
+                const col = (i % 5) + 1;
+                square[squareLetters[i]] = `${row}${col}`;
+            }
+            
+            return square;
+        }
+
+        function displayPolybiusSquare() {
+            const container = document.getElementById('polybiusSquare');
+            container.innerHTML = '';
+            
+            // Create header row
+            container.appendChild(createSquareCell('', 'polybius-header'));
+            for (let i = 1; i <= 5; i++) {
+                container.appendChild(createSquareCell(i.toString(), 'polybius-header'));
+            }
+            
+            // Create data rows with empty cells for user to fill
+            for (let row = 1; row <= 5; row++) {
+                container.appendChild(createSquareCell(row.toString(), 'polybius-header'));
+                for (let col = 1; col <= 5; col++) {
+                    const cell = createSquareCell('', 'polybius-cell', true);
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function createSquareCell(content, className, editable = false) {
+            const cell = document.createElement('div');
+            cell.className = className;
+            
+            if (editable) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = content;
+                input.maxLength = 1;
+                input.addEventListener('input', function(e) {
+                    const value = e.target.value.toUpperCase();
+                    if (value.match(/[A-Z]/) || value === '') {
+                        e.target.value = value;
+                    } else {
+                        e.target.value = content;
+                    }
+                });
+                cell.appendChild(input);
+            } else {
+                cell.textContent = content;
+            }
+            
+            return cell;
+        }
+
+        function encryptWithNihilist(plaintext, polybiusSquare, cipherKey) {
+            // Convert plaintext to numbers using Polybius square
+            const numbers = [];
+            for (let char of plaintext.toUpperCase().replace(/J/g, 'I')) {
+                if (char.match(/[A-Z]/)) {
+                    numbers.push(parseInt(polybiusSquare[char]));
+                }
+            }
+            
+            // Convert cipher key to numbers
+            const keyNumbers = [];
+            for (let char of cipherKey.toUpperCase().replace(/J/g, 'I')) {
+                if (char.match(/[A-Z]/)) {
+                    keyNumbers.push(parseInt(polybiusSquare[char]));
+                }
+            }
+            
+            // Add key numbers cyclically
+            const encryptedNumbers = [];
+            for (let i = 0; i < numbers.length; i++) {
+                const keyIndex = i % keyNumbers.length;
+                encryptedNumbers.push(numbers[i] + keyNumbers[keyIndex]);
+            }
+            
+            return encryptedNumbers.join(' ');
+        }
+
+        function decryptWithNihilist(ciphertext, polybiusSquare, cipherKey) {
+            // Parse encrypted numbers
+            const encryptedNumbers = ciphertext.split(' ').map(num => parseInt(num));
+            
+            // Convert cipher key to numbers
+            const keyNumbers = [];
+            for (let char of cipherKey.toUpperCase().replace(/J/g, 'I')) {
+                if (char.match(/[A-Z]/)) {
+                    keyNumbers.push(parseInt(polybiusSquare[char]));
+                }
+            }
+            
+            // Subtract key numbers cyclically
+            const numbers = [];
+            for (let i = 0; i < encryptedNumbers.length; i++) {
+                const keyIndex = i % keyNumbers.length;
+                numbers.push(encryptedNumbers[i] - keyNumbers[keyIndex]);
+            }
+            
+            // Convert numbers back to letters
+            const reverseSquare = {};
+            for (let [letter, code] of Object.entries(polybiusSquare)) {
+                reverseSquare[code] = letter;
+            }
+            
+            let plaintext = '';
+            for (let num of numbers) {
+                if (reverseSquare[num.toString().padStart(2, '0')]) {
+                    plaintext += reverseSquare[num.toString().padStart(2, '0')];
+                }
+            }
+            
+            return plaintext;
+        }
+
+        function generateNewProblem() {
+            if (!filesLoaded) {
+                logDebug('Files not loaded yet, waiting...');
+                return;
+            }
+
+            logDebug('Generating new problem...');
+
+            // Select random keys
+            currentPolybiusKey = words[Math.floor(Math.random() * words.length)];
+            currentCipherKey = words[Math.floor(Math.random() * words.length)];
+            
+            // Ensure cipher key is different from polybius key
+            while (currentCipherKey === currentPolybiusKey) {
+                currentCipherKey = words[Math.floor(Math.random() * words.length)];
+            }
+            
+            // Select random quote
+            currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            currentPlaintext = currentQuote.replace(/[^A-Z]/gi, '').toUpperCase();
+            
+            // Create Polybius square
+            polybiusSquare = createPolybiusSquare(currentPolybiusKey);
+            
+            // Encrypt the text
+            currentCiphertext = encryptWithNihilist(currentPlaintext, polybiusSquare, currentCipherKey);
+            
+            logDebug(`Polybius Key: ${currentPolybiusKey}`);
+            logDebug(`Cipher Key: ${currentCipherKey}`);
+            logDebug(`Quote: ${currentQuote}`);
+            logDebug(`Plaintext: ${currentPlaintext}`);
+            logDebug(`Ciphertext: ${currentCiphertext}`);
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            // Update keywords
+            document.getElementById('polybiusKey').textContent = currentPolybiusKey;
+            document.getElementById('cipherKey').textContent = currentCipherKey;
+            
+            // Update encrypted text
+            document.getElementById('encryptedText').textContent = currentCiphertext;
+            
+            // Display empty Polybius square for user to fill
+            displayPolybiusSquare();
+            
+            // Clear answer
+            document.getElementById('userAnswer').value = '';
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('userAnswer').value.trim().toUpperCase().replace(/[^A-Z]/g, '');
+            const correctAnswer = currentPlaintext;
+            
+            logDebug(`User answer: "${userAnswer}"`);
+            logDebug(`Correct answer: "${correctAnswer}"`);
+            
+            if (userAnswer === correctAnswer) {
+                showStatus('Perfect! Your decryption is correct!', 'success');
+            } else {
+                // Calculate similarity
+                let matches = 0;
+                const minLength = Math.min(userAnswer.length, correctAnswer.length);
+                for (let i = 0; i < minLength; i++) {
+                    if (userAnswer[i] === correctAnswer[i]) matches++;
+                }
+                const similarity = Math.round((matches / correctAnswer.length) * 100);
+                showStatus(`${similarity}% correct. Keep trying!`, similarity > 70 ? 'warning' : 'error');
+            }
+        }
+
+        function showSolution() {
+            document.getElementById('userAnswer').value = currentPlaintext;
+            showStatus('Solution revealed!', 'success');
+        }
+
+        function resetPolybiusSquare() {
+            displayPolybiusSquare();
+            showStatus('Polybius square cleared for you to fill in', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            logDebug('Page loaded, starting initialization...');
+            loadFiles();
+        });
+    </script>
+</body>
+</html>
