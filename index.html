@@ -3,1140 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Codebusters Practice</title>
+    <title>Cipher Practice Hub</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
         .header {
             background: linear-gradient(135deg, #2c3e50, #3498db);
             color: white;
-            padding: 20px;
+            padding: 40px 20px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 6s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
         }
 
         .header h1 {
-            margin: 0;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 3.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
         }
 
         .content {
-            padding: 30px;
+            padding: 50px 30px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 18px;
+        .cipher-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
-        .error {
-            background: #ffebee;
-            border: 2px solid #f44336;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            color: #c62828;
-        }
-
-        .cryptogram-display {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
+        .cipher-card {
+            background: white;
+            border-radius: 15px;
             padding: 20px;
-            margin-bottom: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 18px;
-            line-height: 1.6;
-            min-height: 200px;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .cipher-line {
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: bold;
-        }
-
-        .plain-line {
-            margin-bottom: 20px;
-            color: #27ae60;
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
-        input[type="text"]:focus {
-            outline: none;
+        .cipher-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .cipher-card:hover::before {
+            left: 100%;
+        }
+
+        .cipher-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
             border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
-        button {
+        .cipher-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cipher-icon {
+            font-size: 1.5em;
+            margin-right: 12px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .cipher-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .cipher-options {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .option-tag {
+            background: #e8f4fd;
+            color: #2980b9;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .cipher-button {
+            width: 100%;
+            padding: 12px;
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
+            border-radius: 10px;
+            font-size: 1em;
             font-weight: bold;
+            cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
         }
 
-        button:hover {
+        .cipher-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .cipher-button:hover::before {
+            left: 100%;
+        }
+
+        .cipher-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
         }
 
-        button:active {
+        .cipher-button:active {
             transform: translateY(0);
         }
 
-        button:disabled {
+        .coming-soon {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .coming-soon .cipher-button {
             background: #bdc3c7;
             cursor: not-allowed;
+        }
+
+        .coming-soon .cipher-button:hover {
             transform: none;
             box-shadow: none;
         }
 
-        button.danger {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-        }
-
-        button.success {
-            background: linear-gradient(135deg, #27ae60, #229954);
-        }
-
-        .puzzle-options {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .option-group {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-        }
-
-        .option-group h4 {
-            margin: 0 0 10px 0;
-            color: #2c3e50;
-        }
-
-        .radio-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .radio-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .frequency-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 2px solid #e9ecef;
-        }
-
-        .frequency-section h3 {
-            margin: 0 0 15px 0;
-            color: #2c3e50;
-        }
-
-        .frequency-table {
-            display: grid;
-            grid-template-columns: repeat(26, 1fr);
-            gap: 2px;
-            margin-bottom: 15px;
-        }
-
-        .freq-cell {
-            text-align: center;
-            padding: 8px 2px;
-            background: white;
-            border: 1px solid #ddd;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        }
-
-        .freq-header {
-            background: #3498db;
-            color: white;
-        }
-
-        .freq-input {
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-        .input-row > * {
-    padding: 8px 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-        .freq-input:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-
-        .input-row {
-            display: grid;
-            grid-template-columns: repeat(26, 1fr);
-            gap: 2px;
-            margin-top: 10px;
-        }
-
-        .status {
-            background: #e8f4fd;
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-
-        .substitution-display {
-            color: #27ae60;
-        }
-
-        .underscore {
-            color: #95a5a6;
-        }
-
-        .file-stats {
-            background: #f0f8ff;
-            border: 2px solid #4169e1;
-            border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #2c3e50;
-        }
-
         @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 10px;
+            .header h1 {
+                font-size: 2.5em;
             }
 
             .content {
+                padding: 30px 20px;
+            }
+
+            .cipher-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .cipher-card {
                 padding: 20px;
             }
+        }
 
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .puzzle-options {
-                flex-direction: column;
-            }
-
-            .frequency-table {
-                grid-template-columns: repeat(13, 1fr);
-            }
-
-            .input-row {
-                grid-template-columns: repeat(13, 1fr);
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
-   <div class="container">
-    <div class="header">
-        <h1>🔐 Codebusters Practice</h1>
-    </div>
-    
-    <div class="content">
-        <div id="loadingMessage" class="loading">Loading puzzle data...</div>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Cipher Practice Hub</h1>
+        </div>
         
-        <div id="errorMessage" class="error" style="display: none;">
-            Could not load all data files. Using built-in fallback puzzles.
+        <div class="content">
+            <div class="cipher-grid">
+                <!-- Aristocrat -->
+                <div class="cipher-card" onclick="window.open('aristocrat.html', '_blank')">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Aristocrat</div>
+                    </div>
+                    <button class="cipher-button">Start Practicing</button>
+                </div>
+
+                <!-- Patristocrat -->
+                <div class="cipher-card" onclick="window.open('patristocrat.html', '_blank')">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Patristocrat</div>
+                    </div>
+                    <button class="cipher-button">Start Practicing</button>
+                </div>
+
+                <!-- Xenocrypt -->
+                <div class="cipher-card" onclick="window.open('xenocrypt.html', '_blank')">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Xenocrypt</div>
+                    </div>
+                    <button class="cipher-button">Start Practicing</button>
+                </div>
+
+                <!-- Caesar Cipher -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-icon">↻</div>
+                        <div class="cipher-title">Caesar</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Porta Cipher -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Porta</div>
+                    </div>
+                    <div class="cipher-options">
+                        <span class="option-tag">Normal</span>
+                        <span class="option-tag">Cryptanalysis</span>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Vigenère Cipher -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Vigenère</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Nihilist Cipher -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Nihilist</div>
+                    </div>
+                    <div class="cipher-options">
+                        <span class="option-tag">Normal</span>
+                        <span class="option-tag">Cryptanalysis</span>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Hill Cipher -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Hill</div>
+                    </div>
+                    <div class="cipher-options">
+                        <span class="option-tag">2x2</span>
+                        <span class="option-tag">3x3</span>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Rail Fence -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Rail Fence</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Fractionated Morse -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Fractionated Morse</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Columnar -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Columnar</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+
+                <!-- Baconian -->
+                <div class="cipher-card coming-soon">
+                    <div class="cipher-header">
+                        <div class="cipher-title">Baconian</div>
+                    </div>
+                    <button class="cipher-button">Coming Soon</button>
+                </div>
+            </div>
         </div>
 
-        <div id="fileStats" class="file-stats" style="display: none;">
-                📊 Loaded: <span id="statsText"></span>
-            </div>
-
-            <div id="gameContent" style="display: none;">
-                <div class="puzzle-options">
-                    <div class="option-group">
-                        <h4>Puzzle Type</h4>
-                        <div class="radio-group">
-                            <label class="radio-item">
-                                <input type="radio" name="puzzleType" value="aristocrat" checked>
-                                Aristocrat
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="puzzleType" value="patristocrat">
-                                Patristocrat
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="puzzleType" value="xenocrypt">
-                                Xenocrypt
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="option-group">
-                        <h4>Cipher Mapping</h4>
-                        <div class="radio-group">
-                            <label class="radio-item">
-                                <input type="radio" name="cipherType" value="random" checked>
-                                Random
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="cipherType" value="k1">
-                                K1 (Keyword)
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="cipherType" value="k2">
-                                K2 (Keyword)
-                            </label>
-                            <label class="radio-item">
-                                <input type="radio" name="cipherType" value="k3">
-                                K3 (Keyword)
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="cryptogram-display" id="cryptogramDisplay">
-                    Ready to generate puzzle...
-                </div>
-
-                <div class="controls">
-                    <div class="control-group">
-                        <label>Substitution (e.g., X E):</label>
-                        <input type="text" id="substitutionInput" placeholder="X E" maxlength="3">
-                        <button onclick="processSubstitution()">Apply</button>
-                    </div>
-                    <button onclick="checkSolution()" class="success">Check Solution</button>
-                    <button onclick="loadNewPuzzle()">New Puzzle</button>
-                    <button onclick="showHint()">First Word Hint</button>
-                    <button onclick="guessKeyword()">Guess Keyword</button>
-                    <button onclick="revealAnswer()" class="danger">Reveal Answer</button>
-                </div>
-
-                <div class="frequency-section">
-                    <h3>Letter Frequency & Substitution</h3>
-                    <div class="frequency-table" id="frequencyTable">
-                        <!-- Frequency display will be generated here -->
-                    </div>
-                    <div class="input-row" id="inputRow">
-                        <!-- Input fields will be generated here -->
-                    </div>
-                </div>
-
-                <div class="status" id="statusLabel">
-                    Click "New Puzzle" to start solving!
-                </div>
-            </div>
+        <div class="footer">
+            <p>Master the art of cryptography • Practice makes perfect</p>
         </div>
     </div>
-</div>
-
-    <script>
-        // Game state
-        let currentQuote = '';
-        let encodedText = '';
-        let cipher = {};
-        let guesses = {};
-        let isAristocrat = true;
-        let isXenocrypt = false;
-        let currentKeyword = '';
-        let mappingType = 'random';
-        let firstWord = '';
-
-        // Data loaded from files
-        let englishQuotes = [];
-        let spanishQuotes = [];
-        let keywords = [];
-        let filesLoaded = false;
-
-        // File loading functions
-        async function loadFiles() {
-            const maxLoadTime = 3000; // 3 seconds timeout
-            
-            const loadingTimeout = setTimeout(() => {
-                console.warn('File loading timeout - proceeding with fallback data');
-                useFallbackData();
-                initializeGame();
-            }, maxLoadTime);
-
-            try {
-                updateLoadingMessage('Loading English quotes from quotes.txt...');
-                await loadEnglishQuotes();
-                
-                updateLoadingMessage('Loading Spanish quotes from spanishQuotes.txt...');
-                await loadSpanishQuotes();
-                
-                updateLoadingMessage('Loading keywords from words.txt...');
-                await loadKeywords();
-                
-                clearTimeout(loadingTimeout);
-                filesLoaded = true;
-                initializeGame();
-                
-            } catch (error) {
-                clearTimeout(loadingTimeout);
-                console.error('Error loading files:', error);
-                useFallbackData();
-                showError();
-                initializeGame();
-            }
-        }
-
-        function useFallbackData() {
-            // Set fallback data if files can't be loaded
-            if (englishQuotes.length === 0) {
-                englishQuotes = [
-                    "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-                    "TO BE OR NOT TO BE THAT IS THE QUESTION",
-                    "ALL THE WORLD IS A STAGE AND ALL THE MEN AND WOMEN MERELY PLAYERS",
-                    "LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS",
-                    "THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO",
-                    "KNOWLEDGE IS POWER BUT ENTHUSIASM PULLS THE SWITCH",
-                    "SUCCESS IS NOT FINAL FAILURE IS NOT FATAL IT IS THE COURAGE TO CONTINUE THAT COUNTS",
-                    "THE FUTURE BELONGS TO THOSE WHO BELIEVE IN THE BEAUTY OF THEIR DREAMS",
-                    "IT IS DURING OUR DARKEST MOMENTS THAT WE MUST FOCUS TO SEE THE LIGHT",
-                    "BELIEVE YOU CAN AND YOU ARE HALFWAY THERE"
-                ];
-            }
-
-            if (spanishQuotes.length === 0) {
-                spanishQuotes = [
-                    "EL ZORRO MARRÓN RÁPIDO SALTA SOBRE EL PERRO PEREZOSO",
-                    "LA VIDA ES LO QUE PASA MIENTRAS ESTÁS OCUPADO HACIENDO OTROS PLANES",
-                    "EL ÚNICO MODO DE HACER UN GRAN TRABAJO ES AMAR LO QUE HACES",
-                    "EL CONOCIMIENTO ES PODER PERO EL ENTUSIASMO TIRA DEL INTERRUPTOR",
-                    "EL FUTURO PERTENECE A AQUELLOS QUE CREEN EN LA BELLEZA DE SUS SUEÑOS"
-                ];
-            }
-
-            if (keywords.length === 0) {
-                keywords = [
-                    "PUZZLE", "CIPHER", "SECRET", "HIDDEN", "MYSTERY", "ENIGMA", 
-                    "CODING", "CRYPTO", "SOLVER", "BREAK", "DECODE", "REVEAL",
-                    "ALGORITHM", "PATTERN", "FREQUENCY", "SUBSTITUTION", "ENCRYPT",
-                    "CHALLENGE", "BRAIN", "LOGIC", "THINK", "ANALYZE", "DISCOVER",
-                    "MACHINERY", "TELEPHONE", "COMPUTER", "MATHEMATICS", "SCIENCE"
-                ];
-            }
-
-            filesLoaded = true;
-        }
-
-       async function loadEnglishQuotes() {
-    try {
-        const response = await fetch('quotes.txt');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const text = await response.text();
-        englishQuotes = text.split('\n')
-            .map(line => line.trim().toUpperCase())
-            .filter(line => line.length > 0);
-        
-        if (englishQuotes.length === 0) {
-            throw new Error('No valid quotes found in quotes.txt');
-        }
-        
-    } catch (error) {
-        throw error;
-    }
-}
-
-        async function loadSpanishQuotes() {
-            try {
-                const response = await fetch('spanishQuotes.txt');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const text = await response.text();
-                
-                try {
-                    const data = JSON.parse(text);
-                    if (data.quotes && Array.isArray(data.quotes)) {
-                        spanishQuotes = data.quotes.map(item => 
-                            (item.Cita || item.cita || item.quote || item.Quote || '').toUpperCase()
-                        ).filter(quote => quote.length > 0);
-                    } else if (Array.isArray(data)) {
-                        spanishQuotes = data.map(item => 
-                            typeof item === 'string' ? item.toUpperCase() : 
-                            (item.Cita || item.cita || item.quote || item.Quote || '').toUpperCase()
-                        ).filter(quote => quote.length > 0);
-                    } else {
-                        throw new Error('Invalid JSON structure for Spanish quotes');
-                    }
-                } catch (jsonError) {
-                    spanishQuotes = text.split('\n')
-                        .map(line => line.trim().toUpperCase())
-                        .filter(line => line.length > 0);
-                }
-                
-                if (spanishQuotes.length === 0) {
-                    throw new Error('No quotes found in spanishQuotes.txt');
-                }
-                
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        async function loadKeywords() {
-            try {
-                const response = await fetch('words.txt');
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const text = await response.text();
-                keywords = text.split(/\r?\n/)
-                    .map(line => line.trim().toUpperCase())
-                    .filter(line => line.length > 0 && /^[A-Z]+$/.test(line));
-                
-                if (keywords.length === 0) {
-                    throw new Error('No keywords found in words.txt');
-                }
-                
-            } catch (error) {
-                throw error;
-            }
-        }
-
-        function updateLoadingMessage(message) {
-            document.getElementById('loadingMessage').textContent = message;
-        }
-
-        function showError() {
-            document.getElementById('loadingMessage').style.display = 'none';
-            document.getElementById('errorMessage').style.display = 'block';
-        }
-
-        function initializeGame() {
-            document.getElementById('loadingMessage').style.display = 'none';
-            document.getElementById('fileStats').style.display = 'block';
-            document.getElementById('gameContent').style.display = 'block';
-            
-            updateFileStats();
-            setupEventHandlers();
-            createFrequencyTable();
-            loadNewPuzzle();
-        }
-
-        function updateFileStats() {
-            const statsText = `${englishQuotes.length} English quotes, ${spanishQuotes.length} Spanish quotes, ${keywords.length} keywords`;
-            document.getElementById('statsText').textContent = statsText;
-        }
-
-        function setupEventHandlers() {
-            document.querySelectorAll('input[name="puzzleType"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    isAristocrat = this.value === 'aristocrat';
-                    isXenocrypt = this.value === 'xenocrypt';
-                    loadNewPuzzle();
-                });
-            });
-
-            document.querySelectorAll('input[name="cipherType"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    mappingType = this.value;
-                    loadNewPuzzle();
-                });
-            });
-
-            document.getElementById('substitutionInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    processSubstitution();
-                }
-            });
-        }
-
-        function createFrequencyTable() {
-            const table = document.getElementById('frequencyTable');
-            const inputRow = document.getElementById('inputRow');
-            
-            table.innerHTML = '';
-            inputRow.innerHTML = '';
-
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const headerCell = document.createElement('div');
-                headerCell.className = 'freq-cell freq-header';
-                headerCell.textContent = letter;
-                table.appendChild(headerCell);
-            }
-
-            for (let i = 0; i < 26; i++) {
-                const freqCell = document.createElement('div');
-                freqCell.className = 'freq-cell';
-                freqCell.id = `freq-${String.fromCharCode(65 + i)}`;
-                freqCell.textContent = '0';
-                table.appendChild(freqCell);
-            }
-
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'freq-input';
-                input.maxLength = 1;
-                input.id = `input-${letter}`;
-                
-                input.addEventListener('input', function() {
-                    const value = this.value.toUpperCase();
-                    if (value && /[A-Z]/.test(value)) {
-                        guesses[letter] = value;
-                        this.value = value;
-                    } else {
-                        delete guesses[letter];
-                        this.value = '';
-                    }
-                    updateDisplay();
-                    updateFrequencyTable();
-                });
-
-                inputRow.appendChild(input);
-            }
-        }
-
-        function loadNewPuzzle() {
-            guesses = {};
-            
-            const quotes = isXenocrypt ? spanishQuotes : englishQuotes;
-            if (quotes.length === 0) {
-                updateStatus('No quotes available for this puzzle type');
-                return;
-            }
-            
-            currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
-            currentQuote = currentQuote.replace(/^"|"$|\\"/g, '');
-            
-            const words = currentQuote.trim().split(/\s+/);
-            firstWord = words.length > 0 ? words[0].replace(/[^A-Z]/g, '') : '';
-
-            if (mappingType === 'random') {
-                cipher = generateRandomCipher();
-                currentKeyword = '';
-            } else {
-                if (keywords.length === 0) {
-                    updateStatus('No keywords available for cipher generation');
-                    return;
-                }
-                currentKeyword = keywords[Math.floor(Math.random() * keywords.length)];
-                cipher = generateKeywordCipher(currentKeyword, mappingType);
-            }
-
-if (isXenocrypt) {
-    encodedText = encodeAristocrat(currentQuote); // Xenocrypts use aristocrat encoding (with spaces)
-} else {
-    encodedText = isAristocrat ? encodeAristocrat(currentQuote) : encodePatristocrat(currentQuote);
-}
-            for (let i = 0; i < 26; i++) {
-                const letter = String.fromCharCode(65 + i);
-                const input = document.getElementById(`input-${letter}`);
-                if (input) input.value = '';
-            }
-
-            updateDisplay();
-            updateFrequencyTable();
-            updateStatus(`New ${isXenocrypt ? 'Xenocrypt' : isAristocrat ? 'Aristocrat' : 'Patristocrat'} puzzle loaded!`);
-        }
-
-        function generateRandomCipher() {
-            const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-            const cipherAlphabet = [...plainAlphabet];
-            
-            for (let i = cipherAlphabet.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cipherAlphabet[i], cipherAlphabet[j]] = [cipherAlphabet[j], cipherAlphabet[i]];
-            }
-
-            for (let i = 0; i < 26; i++) {
-                if (plainAlphabet[i] === cipherAlphabet[i]) {
-                    const swapIndex = (i + 1) % 26;
-                    [cipherAlphabet[i], cipherAlphabet[swapIndex]] = [cipherAlphabet[swapIndex], cipherAlphabet[i]];
-                }
-            }
-
-            const result = {};
-            for (let i = 0; i < 26; i++) {
-                result[plainAlphabet[i]] = cipherAlphabet[i];
-            }
-            return result;
-        }
-
-        function generateKeywordCipher(keyword, type) {
-            const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c)).join('');
-            
-            let cipherAlphabet = '';
-            
-            if (type === 'k1') {
-                // K1: keyword + remaining alphabet in order
-                cipherAlphabet = cleanKeyword;
-                for (let c of plainAlphabet) {
-                    if (!cipherAlphabet.includes(c)) {
-                        cipherAlphabet += c;
-                    }
-                }
-            } else if (type === 'k2') {
-                // K2: alternate between keyword letters and alphabet letters
-                const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c));
-                let keyIndex = 0, alphaIndex = 0;
-                
-                while (cipherAlphabet.length < 26) {
-                    if (keyIndex < cleanKeyword.length) {
-                        cipherAlphabet += cleanKeyword[keyIndex++];
-                    }
-                    if (alphaIndex < remaining.length && cipherAlphabet.length < 26) {
-                        cipherAlphabet += remaining[alphaIndex++];
-                    }
-                }
-            } else if (type === 'k3') {
-                // K3: keyword + remaining alphabet in reverse order
-                cipherAlphabet = cleanKeyword;
-                const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c)).reverse();
-                cipherAlphabet += remaining.join('');
-            }
-
-            // Ensure no self-mapping
-            const cipherArray = cipherAlphabet.split('');
-            for (let i = 0; i < 26; i++) {
-                if (plainAlphabet[i] === cipherArray[i]) {
-                    // Find next position that doesn't create self-mapping
-                    let swapIndex = (i + 1) % 26;
-                    while (swapIndex !== i && (plainAlphabet[swapIndex] === cipherArray[i] || plainAlphabet[i] === cipherArray[swapIndex])) {
-                        swapIndex = (swapIndex + 1) % 26;
-                    }
-                    if (swapIndex !== i) {
-                        [cipherArray[i], cipherArray[swapIndex]] = [cipherArray[swapIndex], cipherArray[i]];
-                    }
-                }
-            }
-
-            const result = {};
-            for (let i = 0; i < 26; i++) {
-                result[plainAlphabet[i]] = cipherArray[i];
-            }
-            return result;
-        }
-
-        function encodeAristocrat(text) {
-            return text.split('').map(c => {
-                if (/[A-Z]/.test(c)) return cipher[c];
-                if (/[a-z]/.test(c)) return cipher[c.toUpperCase()];
-                return c;
-            }).join('');
-        }
-
-        function encodePatristocrat(text) {
-            const encoded = text.split('').map(c => {
-                if (/[A-Za-z]/.test(c)) return cipher[c.toUpperCase()];
-                return '';
-            }).join('');
-            
-            // Group into blocks of 5
-            return encoded.match(/.{1,5}/g).join(' ');
-        }
-
-       function updateDisplay() {
-    const display = document.getElementById('cryptogramDisplay');
-    
-    if (isAristocrat || isXenocrypt) {
-        const lines = splitIntoLines(encodedText, 60);
-        let html = '';
-        
-        // Alternate between cipher lines and substitution lines
-        lines.forEach(line => {
-            // Cipher line
-            html += '<div class="cipher-line">';
-            for (let c of line) {
-                html += `<span>${c}</span>`;
-            }
-            html += '</div>';
-            
-            // Substitution line immediately after each cipher line
-            html += '<div class="plain-line">';
-            for (let c of line) {
-                if (/[A-Z]/.test(c)) {
-                    if (guesses[c]) {
-                        html += `<span class="substitution-display">${guesses[c]}</span>`;
-                    } else {
-                        html += `<span class="underscore">_</span>`;
-                    }
-                } else {
-                    // Preserve spaces and punctuation
-                    html += `<span>${c}</span>`;
-                }
-            }
-            html += '</div>';
-        });
-        
-        display.innerHTML = html;
-    } else {
-        // Patristocrat - keep existing logic
-        let html = '<div class="cipher-line">' + encodedText + '</div>';
-        html += '<div class="plain-line">';
-        for (let c of encodedText) {
-            if (/[A-Z]/.test(c)) {
-                if (guesses[c]) {
-                    html += `<span class="substitution-display">${guesses[c]}</span>`;
-                } else {
-                    html += `<span class="underscore">_</span>`;
-                }
-            } else {
-                html += `<span>${c}</span>`;
-            }
-        }
-        html += '</div>';
-        display.innerHTML = html;
-    }
-}
-
-        function splitIntoLines(text, maxLength) {
-            const lines = [];
-            let currentLine = '';
-            const words = text.split(' ');
-            
-          for (let word of words) {
-            if (currentLine.length + word.length + 1 <= maxLength) {
-                currentLine += (currentLine ? ' ' : '') + word;
-            } else {
-                if (currentLine) lines.push(currentLine);
-                currentLine = word;
-            }
-        }
-        if (currentLine) lines.push(currentLine);
-        return lines;
-    }
-
-    function updateFrequencyTable() {
-        const frequencies = {};
-        for (let c of encodedText) {
-            if (/[A-Z]/.test(c)) {
-                frequencies[c] = (frequencies[c] || 0) + 1;
-            }
-        }
-
-        for (let i = 0; i < 26; i++) {
-            const letter = String.fromCharCode(65 + i);
-            const cell = document.getElementById(`freq-${letter}`);
-            if (cell) {
-                cell.textContent = frequencies[letter] || 0;
-            }
-        }
-    }
-
-    function processSubstitution() {
-        const input = document.getElementById('substitutionInput').value.trim().toUpperCase();
-        const parts = input.split(/\s+/);
-        
-        if (parts.length === 2 && /^[A-Z]$/.test(parts[0]) && /^[A-Z]$/.test(parts[1])) {
-            const cipherLetter = parts[0];
-            const plainLetter = parts[1];
-            
-            guesses[cipherLetter] = plainLetter;
-            
-            const inputField = document.getElementById(`input-${cipherLetter}`);
-            if (inputField) inputField.value = plainLetter;
-            
-            updateDisplay();
-            updateFrequencyTable();
-            document.getElementById('substitutionInput').value = '';
-            updateStatus(`Applied substitution: ${cipherLetter} → ${plainLetter}`);
-        } else {
-            updateStatus('Invalid substitution format. Use format: X E');
-        }
-    }
-
-    function checkSolution() {
-        const reverseCipher = {};
-        for (let [plain, cipher] of Object.entries(cipher)) {
-            reverseCipher[cipher] = plain;
-        }
-
-        let correct = 0;
-        let total = 0;
-        
-        for (let [cipherLetter, plainGuess] of Object.entries(guesses)) {
-            total++;
-            if (reverseCipher[cipherLetter] === plainGuess) {
-                correct++;
-            }
-        }
-
-        if (total === 0) {
-            updateStatus('No substitutions made yet!');
-            return;
-        }
-
-        const percentage = Math.round((correct / total) * 100);
-        updateStatus(`${correct}/${total} correct substitutions (${percentage}%)`);
-
-        if (correct === total && total === Object.keys(cipher).length) {
-            updateStatus('🎉 Puzzle solved perfectly! Congratulations!');
-        }
-    }
-
-    function showHint() {
-    if (!firstWord) {
-        updateStatus('No hint available for this puzzle');
-        return;
-    }
-
-    const reverseCipher = {};
-    for (let [plain, cipher] of Object.entries(cipher)) {
-        reverseCipher[cipher] = plain;
-    }
-
-    const encodedFirstWord = firstWord.split('').map(c => cipher[c]).join('');
-    updateStatus(`Hint: The first word "${encodedFirstWord}" decodes to "${firstWord}"`);
-    
-    // Apply the hint to the input fields
-    for (let i = 0; i < firstWord.length; i++) {
-        const plainLetter = firstWord[i];
-        const cipherLetter = cipher[plainLetter];
-        if (cipherLetter && /[A-Z]/.test(plainLetter)) {
-            guesses[cipherLetter] = plainLetter;
-            const inputField = document.getElementById(`input-${cipherLetter}`);
-            if (inputField) inputField.value = plainLetter;
-        }
-    }
-    
-    updateDisplay();
-    updateFrequencyTable();
-}
-    function guessKeyword() {
-        if (!currentKeyword) {
-            updateStatus('This puzzle was not generated with a keyword');
-            return;
-        }
-
-        const userGuess = prompt('Enter your keyword guess:');
-        if (userGuess) {
-            const cleanGuess = userGuess.toUpperCase().replace(/[^A-Z]/g, '');
-            if (cleanGuess === currentKeyword) {
-                updateStatus(`🎉 Correct! The keyword was "${currentKeyword}"`);
-            } else {
-                updateStatus(`❌ Incorrect. The keyword was not "${cleanGuess}"`);
-            }
-        }
-    }
-
-  function revealAnswer() {
-   // Create reverse cipher mapping (cipher letter -> plain letter)
-   const reverseCipher = {};
-   for (let [plain, cipherLetter] of Object.entries(cipher)) {
-       reverseCipher[cipherLetter] = plain;
-   }
-
-   // Update guesses object
-   guesses = {...reverseCipher};
-   
-   // Update all input fields
-   for (let i = 0; i < 26; i++) {
-       const cipherLetter = String.fromCharCode(65 + i);
-       const input = document.getElementById(`input-${cipherLetter}`);
-       if (input && reverseCipher[cipherLetter]) {
-           input.value = reverseCipher[cipherLetter];
-       }
-   }
-
-   updateDisplay();
-   updateFrequencyTable();
-   
-   let statusMsg = `Answer: "${currentQuote}"`;
-   if (currentKeyword) {
-       statusMsg += ` | Keyword: "${currentKeyword}" (${mappingType.toUpperCase()})`;
-   }
-   updateStatus(statusMsg);
-}
-
-    function updateStatus(message) {
-        document.getElementById('statusLabel').textContent = message;
-    }
-
-    // Fixed cipher generation functions
-    function generateKeywordCipher(keyword, type) {
-        const plainAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const cleanKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c)).join('');
-        
-        let cipherAlphabet = '';
-        
-        if (type === 'k1') {
-            // K1: keyword at beginning + remaining alphabet in order
-            cipherAlphabet = cleanKeyword;
-            for (let c of plainAlphabet) {
-                if (!cipherAlphabet.includes(c)) {
-                    cipherAlphabet += c;
-                }
-            }
-        } else if (type === 'k2') {
-            // K2: keyword at position based on first letter's position in alphabet
-            const keywordStart = cleanKeyword.charCodeAt(0) - 65; // Position of first letter (A=0, B=1, etc.)
-            const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c));
-            
-            // Build cipher alphabet: letters before keyword position + keyword + remaining letters
-            cipherAlphabet = remaining.slice(0, keywordStart).join('') + 
-                           cleanKeyword + 
-                           remaining.slice(keywordStart).join('');
-        } else if (type === 'k3') {
-            // K3: keyword + remaining alphabet in reverse order
-            cipherAlphabet = cleanKeyword;
-            const remaining = plainAlphabet.split('').filter(c => !cleanKeyword.includes(c)).reverse();
-            cipherAlphabet += remaining.join('');
-        }
-
-        // Ensure we have exactly 26 characters
-        if (cipherAlphabet.length !== 26) {
-            console.error('Cipher alphabet length error:', cipherAlphabet.length);
-            return generateRandomCipher(); // Fallback
-        }
-
-        // Create mapping and ensure no self-mapping
-        const result = {};
-        const cipherArray = cipherAlphabet.split('');
-        
-        for (let i = 0; i < 26; i++) {
-            result[plainAlphabet[i]] = cipherArray[i];
-        }
-
-        // Fix any self-mappings
-        for (let i = 0; i < 26; i++) {
-            if (plainAlphabet[i] === cipherArray[i]) {
-                // Find a suitable swap partner
-                let swapIndex = (i + 1) % 26;
-                while (swapIndex !== i) {
-                    if (plainAlphabet[swapIndex] !== cipherArray[i] && plainAlphabet[i] !== cipherArray[swapIndex]) {
-                        // Perform the swap
-                        [cipherArray[i], cipherArray[swapIndex]] = [cipherArray[swapIndex], cipherArray[i]];
-                        // Update the result mapping
-                        result[plainAlphabet[i]] = cipherArray[i];
-                        result[plainAlphabet[swapIndex]] = cipherArray[swapIndex];
-                        break;
-                    }
-                    swapIndex = (swapIndex + 1) % 26;
-                }
-            }
-        }
-
-        return result;
-    }
-
-    // Initialize the application with timeout fallback
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set a maximum loading time of 2 seconds
-        const loadingTimeout = setTimeout(() => {
-            console.warn('Loading timeout - using fallback data');
-            useFallbackData();
-            initializeGame();
-        }, 2000);
-
-        // Try to load files
-        loadFiles().then(() => {
-            clearTimeout(loadingTimeout);
-        }).catch((error) => {
-            clearTimeout(loadingTimeout);
-            console.error('Failed to load files:', error);
-            useFallbackData();
-            showError();
-            initializeGame();
-        });
-    });
-
-    // Fixed file loading with better error handling
-    async function loadFiles() {
-        try {
-            updateLoadingMessage('Loading English quotes...');
-            await loadEnglishQuotes();
-        } catch (error) {
-            console.warn('Failed to load English quotes, using fallback');
-        }
-        
-        try {
-            updateLoadingMessage('Loading Spanish quotes...');
-            await loadSpanishQuotes();
-        } catch (error) {
-            console.warn('Failed to load Spanish quotes, using fallback');
-        }
-        
-        try {
-            updateLoadingMessage('Loading keywords...');
-            await loadKeywords();
-        } catch (error) {
-            console.warn('Failed to load keywords, using fallback');
-        }
-        
-        useFallbackData(); // Ensure we have data
-        filesLoaded = true;
-        initializeGame();
-    }
-        // Emergency fallback - show game after 3 seconds no matter what
-setTimeout(() => {
-    if (document.getElementById('gameContent').style.display === 'none') {
-        console.log('Emergency fallback: showing game content');
-        useFallbackData();
-        initializeGame();
-    }
-}, 3000);
-    </script>
 </body>
 </html>
