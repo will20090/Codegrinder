@@ -235,15 +235,6 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        .info-text {
-            background: #e7f3ff;
-            border: 1px solid #b3d9ff;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            color: #0066cc;
-            font-size: 0.95em;
-        }
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -277,11 +268,6 @@
         
         <div class="content">
             <div id="statusMessage" class="status" style="display: none;"></div>
-            
-            <div class="info-text">
-                <strong>Instructions:</strong> Use the inverse matrix to decrypt the cipher text back to plaintext. 
-                For 3x3 Hill cipher: decrypt by multiplying cipher pairs with the inverse matrix mod 26.
-            </div>
             
             <div class="section">
                 <h2>Key Matrix & Inverse</h2>
@@ -331,7 +317,6 @@
                 <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
                 <button class="btn btn-success" onclick="checkAnswer()">Check Answer</button>
                 <button class="btn btn-danger" onclick="showSolution()">Show Solution</button>
-                <button class="btn btn-secondary" onclick="toggleDebug()">Debug Mode</button>
             </div>
         </div>
     </div>
@@ -361,11 +346,6 @@
             if (debugMode) {
                 console.log(message);
             }
-        }
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            showStatus(`Debug mode ${debugMode ? 'enabled' : 'disabled'}`, 'success');
         }
 
         function showStatus(message, type) {
