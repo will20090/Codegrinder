@@ -109,6 +109,28 @@
             font-weight: bold;
             color: #2c3e50;
         }
+        .plaintext-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .plaintext-info p {
+            margin: 5px 0;
+            color: #495057;
+        }
+        .plaintext-original {
+            font-style: italic;
+            color: #6c757d;
+        }
+        .plaintext-processed {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+            margin-top: 5px;
+        }
         .cipher-section {
             display: flex;
             flex-direction: column;
@@ -120,6 +142,7 @@
             gap: 5px;
             align-items: center;
             justify-content: center;
+            flex-wrap: wrap;
         }
         .cipher-letter {
             font-size: 1.5em;
@@ -146,11 +169,6 @@
         .answer-box:focus {
             border-color: #2980b9;
             box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
-        }
-        .answer-box.placeholder {
-            background: rgba(52, 152, 219, 0.1);
-            border-style: dashed;
-            color: #7f8c8d;
         }
         .control-buttons {
             display: flex;
@@ -232,6 +250,9 @@
             .key-word {
                 font-size: 1.5em;
             }
+            .cipher-row {
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -258,6 +279,15 @@
             </div>
 
             <div class="section">
+                <h2>Plaintext Information</h2>
+                <div class="plaintext-info">
+                    <p><strong>Original Text:</strong> <span id="originalText" class="plaintext-original">Loading...</span></p>
+                    <p><strong>Processed:</strong> <span id="processedText" class="plaintext-processed">Loading...</span></p>
+                    <p><strong>Length:</strong> <span id="textLength">-</span> characters</p>
+                </div>
+            </div>
+
+            <div class="section">
                 <h2>Cipher Text</h2>
                 <div class="cipher-section" id="cipherSection">
                     <div class="loading">Loading...</div>
@@ -267,6 +297,7 @@
             <div class="control-buttons">
                 <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
                 <button class="btn btn-secondary" onclick="checkAnswer()">Check Answer</button>
+                <button class="btn btn-secondary" onclick="showSolution()">Show Solution</button>
                 <button class="btn btn-secondary" onclick="toggleDebug()">Debug Info</button>
             </div>
 
@@ -279,16 +310,16 @@
         let currentMatrix = [0, 1, 11, 4];
         let currentCipher = '';
         let currentPlaintext = '';
+        let currentOriginalText = '';
         let hillWords = [];
         let quotes = [];
         let filesLoaded = false;
         let debugMode = false;
 
         // Default data as fallback
-        const defaultHillWords = ['EROR'];
-        
+        const defaultHillWords = ['BRUH'];
         const defaultQuotes = [
-            "File loaded wrong."
+            "Not loaded right."
         ];
 
         function logDebug(message) {
@@ -328,92 +359,46 @@
             quotes = [...defaultQuotes];
             logDebug(`Initialized with ${hillWords.length} default hill words and ${quotes.length} default quotes`);
 
-            // Check if file system is available
-            if (typeof window.fs === 'undefined') {
-                logDebug('window.fs is undefined - file system not available');
-                showStatus('File system not available. Using default data.', 'warning');
-                filesLoaded = true;
-                generateNewProblem();
-                return;
-            }
-
-            logDebug('window.fs is available, attempting to load files...');
-
-            let hillWordsLoaded = false;
-            let quotesLoaded = false;
-
             try {
                 // Try to load hillWords2.txt
                 logDebug('Attempting to load hillWords2.txt...');
-                try {
-                    const hillWordsData = await window.fs.readFile('hillWords2.txt', { encoding: 'utf8' });
-                    logDebug(`Raw hill words data length: ${hillWordsData.length} characters`);
-                    
-                    const loadedWords = hillWordsData
+                const hillWordsResponse = await fetch('hillWords2.txt');
+                if (hillWordsResponse.ok) {
+                    const hillWordsText = await hillWordsResponse.text();
+                    const loadedWords = hillWordsText
                         .split(/[\r\n]+/)
                         .map(word => word.trim().toUpperCase())
                         .filter(word => word.length === 4 && /^[A-Z]+$/.test(word));
                     
-                    logDebug(`Processed ${loadedWords.length} valid hill words from file`);
-                    logDebug(`First few words: ${loadedWords.slice(0, 5).join(', ')}`);
-                    
                     if (loadedWords.length > 0) {
                         hillWords = loadedWords;
-                        hillWordsLoaded = true;
                         logDebug(`Successfully loaded ${hillWords.length} hill words from file`);
-                    } else {
-                        logDebug('No valid hill words found in file');
                     }
-                } catch (e) {
-                    logDebug(`Failed to load hillWords2.txt: ${e.message}`);
                 }
 
                 // Try to load quotes.txt
                 logDebug('Attempting to load quotes.txt...');
-                try {
-                    const quotesData = await window.fs.readFile('quotes.txt', { encoding: 'utf8' });
-                    logDebug(`Raw quotes data length: ${quotesData.length} characters`);
-                    
-                    const loadedQuotes = quotesData
+                const quotesResponse = await fetch('quotes.txt');
+                if (quotesResponse.ok) {
+                    const quotesText = await quotesResponse.text();
+                    const loadedQuotes = quotesText
                         .split(/[\r\n]+/)
                         .map(quote => quote.trim())
                         .filter(quote => quote.length > 10);
                     
-                    logDebug(`Processed ${loadedQuotes.length} valid quotes from file`);
-                    logDebug(`First quote: "${loadedQuotes[0] || 'none'}"`);
-                    
                     if (loadedQuotes.length > 0) {
                         quotes = loadedQuotes;
-                        quotesLoaded = true;
                         logDebug(`Successfully loaded ${quotes.length} quotes from file`);
-                    } else {
-                        logDebug('No valid quotes found in file');
                     }
-                } catch (e) {
-                    logDebug(`Failed to load quotes.txt: ${e.message}`);
                 }
 
-                // Show status message
-                if (hillWordsLoaded && quotesLoaded) {
-                    showStatus('Successfully loaded both hillWords2.txt and quotes.txt!', 'success');
-                    logDebug('Both files loaded successfully');
-                } else if (hillWordsLoaded || quotesLoaded) {
-                    const loaded = hillWordsLoaded ? 'hillWords2.txt' : 'quotes.txt';
-                    const failed = hillWordsLoaded ? 'quotes.txt' : 'hillWords2.txt';
-                    showStatus(`Loaded ${loaded}. Using defaults for ${failed}.`, 'warning');
-                    logDebug(`Partial loading: ${loaded} succeeded, ${failed} failed`);
-                } else {
-                    showStatus('Could not load files. Using default data.', 'warning');
-                    logDebug('Both files failed to load, using defaults');
-                }
-
-            } catch (e) {
-                logDebug(`Error during file loading: ${e.message}`);
-                showStatus('Error loading files. Using default data.', 'error');
+                showStatus('Files loaded successfully!', 'success');
+            } catch (error) {
+                logDebug(`Error loading files: ${error.message}`);
+                showStatus('Using default data - files not found', 'warning');
             }
 
             filesLoaded = true;
-            logDebug('File loading process completed, generating first problem...');
             generateNewProblem();
         }
 
@@ -431,6 +416,17 @@
                 matrix.push(letterToNumber(word[i]));
             }
             return matrix;
+        }
+
+        function isValidMatrix(matrix) {
+            const det = (matrix[0] * matrix[3] - matrix[1] * matrix[2]) % 26;
+            const detAbs = ((det % 26) + 26) % 26;
+            
+            // Check if determinant has multiplicative inverse mod 26
+            for (let i = 1; i < 26; i++) {
+                if ((detAbs * i) % 26 === 1) return true;
+            }
+            return false;
         }
 
         function findSuitableCipher() {
@@ -455,7 +451,7 @@
                         if (letterCount >= 10 && letterCount <= 20) {
                             logDebug(`Found suitable text: "${combined}" (${letterCount} letters)`);
                             return {
-                                text: combined,
+                                original: combined,
                                 letters: combined.replace(/\s/g, '').toUpperCase()
                             };
                         }
@@ -468,7 +464,7 @@
             // Fallback
             logDebug('Using fallback cipher text');
             return {
-                text: "QUICK BROWN FOX",
+                original: "QUICK BROWN FOX",
                 letters: "QUICKBROWNFOX"
             };
         }
@@ -507,13 +503,25 @@
 
             logDebug('Generating new problem...');
 
-            // Select random key word
-            currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
-            currentMatrix = generateKeyMatrix(currentKey);
+            // Find a valid key word
+            let attempts = 0;
+            do {
+                currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
+                currentMatrix = generateKeyMatrix(currentKey);
+                attempts++;
+            } while (!isValidMatrix(currentMatrix) && attempts < 100);
+
+            if (attempts >= 100) {
+                showStatus('Could not find valid matrix, using default', 'warning');
+                currentKey = 'ABLE';
+                currentMatrix = [0, 1, 11, 4];
+            }
+
             logDebug(`Selected key: "${currentKey}" -> matrix [${currentMatrix.join(', ')}]`);
             
             // Find suitable cipher text
             const cipherData = findSuitableCipher();
+            currentOriginalText = cipherData.original;
             currentPlaintext = cipherData.letters;
             currentCipher = encryptWithHill(currentPlaintext, currentMatrix);
             
@@ -533,6 +541,11 @@
             matrixCells.forEach((cell, index) => {
                 cell.textContent = currentMatrix[index];
             });
+            
+            // Update plaintext info
+            document.getElementById('originalText').textContent = currentOriginalText;
+            document.getElementById('processedText').textContent = currentPlaintext;
+            document.getElementById('textLength').textContent = currentPlaintext.length;
             
             // Update cipher text with aligned input boxes
             const cipherSection = document.getElementById('cipherSection');
@@ -615,7 +628,7 @@
             });
             
             const score = Math.round((correct / total) * 100);
-            alert(`Score: ${score}% (${correct}/${total} correct)\nCorrect answer: ${currentPlaintext}`);
+            showStatus(`Score: ${score}% (${correct}/${total} correct)`, score === 100 ? 'success' : 'warning');
             
             // Reset colors after a delay
             setTimeout(() => {
@@ -624,6 +637,16 @@
                     input.style.borderColor = '';
                 });
             }, 3000);
+        }
+
+        function showSolution() {
+            const inputs = document.querySelectorAll('.answer-box');
+            inputs.forEach((input, index) => {
+                if (index < currentPlaintext.length) {
+                    input.value = currentPlaintext[index];
+                }
+            });
+            showStatus('Solution revealed!', 'success');
         }
 
         // Initialize on load
