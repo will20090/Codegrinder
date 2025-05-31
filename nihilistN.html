@@ -371,10 +371,26 @@
             console.log(message);
         }
 
-        function showStatus(message, type) {
-            const statusEl = document.getElementById('statusMessage');
+        function showStatus(message, type, atBottom = false) {
+            let statusEl;
+            if (atBottom) {
+                // Create or get bottom status element
+                statusEl = document.getElementById('bottomStatus');
+                if (!statusEl) {
+                    statusEl = document.createElement('div');
+                    statusEl.id = 'bottomStatus';
+                    statusEl.className = 'status';
+                    statusEl.style.gridColumn = '1 / -1';
+                    statusEl.style.marginTop = '20px';
+                    document.querySelector('.control-buttons').insertAdjacentElement('afterend', statusEl);
+                }
+            } else {
+                statusEl = document.getElementById('statusMessage');
+            }
+            
             statusEl.textContent = message;
             statusEl.className = `status ${type}`;
+            if (atBottom) statusEl.className += ' bottom-status';
             statusEl.style.display = 'block';
             
             setTimeout(() => {
@@ -423,10 +439,10 @@
                     }
                 }
 
-                showStatus('Files loaded successfully!', 'success');
+                showStatus('Files loaded successfully!', 'success', true);
             } catch (error) {
                 logDebug(`Error loading files: ${error.message}`);
-                showStatus('Using default data - files not found', 'warning');
+                showStatus('Using default data - files not found', 'warning', true);
             }
 
             filesLoaded = true;
@@ -616,27 +632,20 @@
             logDebug(`Correct answer: "${correctAnswer}"`);
             
             if (userAnswer === correctAnswer) {
-                showStatus('Perfect! Your decryption is correct!', 'success');
+                showStatus('Correct! Well done!', 'success', true);
             } else {
-                // Calculate similarity
-                let matches = 0;
-                const minLength = Math.min(userAnswer.length, correctAnswer.length);
-                for (let i = 0; i < minLength; i++) {
-                    if (userAnswer[i] === correctAnswer[i]) matches++;
-                }
-                const similarity = Math.round((matches / correctAnswer.length) * 100);
-                showStatus(`${similarity}% correct. Keep trying!`, similarity > 70 ? 'warning' : 'error');
+                showStatus('Incorrect. Try again!', 'error', true);
             }
         }
 
         function showSolution() {
             document.getElementById('userAnswer').value = currentPlaintext;
-            showStatus('Solution revealed!', 'success');
+            showStatus('Solution revealed!', 'success', true);
         }
 
         function resetPolybiusSquare() {
             displayPolybiusSquare();
-            showStatus('Polybius square cleared for you to fill in', 'success');
+            showStatus('Polybius square cleared', 'success', true);
         }
 
         // Initialize on load
