@@ -187,6 +187,23 @@
             color: #7f8c8d;
             font-style: italic;
         }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -208,6 +225,8 @@
         </div>
         
         <div class="content">
+            <div id="statusMessage" class="status" style="display: none;"></div>
+            
             <div class="section">
                 <h2>Key Matrix</h2>
                 <div class="key-display">
@@ -242,8 +261,9 @@
         let currentPlaintext = '';
         let hillWords = [];
         let quotes = [];
+        let filesLoaded = false;
 
-        // Sample data (will be replaced by file loading)
+        // Default data as fallback
         const defaultHillWords = ['ABLE', 'CAKE', 'DIED', 'EDGE', 'FROG', 'GOLF', 'HELP', 'JOKE', 'KING', 'LION', 'MOON', 'NOTE', 'OPEN', 'PARK', 'QUIT', 'ROSE', 'SAND', 'TIME', 'UNIT', 'VASE', 'WAVE', 'YEAR', 'ZONE', 'BIRD'];
         
         const defaultQuotes = [
@@ -264,31 +284,85 @@
             "Patience is a virtue worth cultivating"
         ];
 
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
         async function loadFiles() {
+            let hillWordsLoaded = false;
+            let quotesLoaded = false;
+
+            // Initialize with defaults first
+            hillWords = [...defaultHillWords];
+            quotes = [...defaultQuotes];
+
+            // Check if file system is available
+            if (typeof window.fs === 'undefined') {
+                showStatus('File system not available. Using default data.', 'warning');
+                filesLoaded = true;
+                generateNewProblem();
+                return;
+            }
+
             try {
                 // Try to load hillWords2.txt
                 try {
                     const hillWordsData = await window.fs.readFile('hillWords2.txt', { encoding: 'utf8' });
-                    hillWords = hillWordsData.split('\n').map(word => word.trim().toUpperCase()).filter(word => word.length === 4);
+                    const loadedWords = hillWordsData
+                        .split(/[\r\n]+/)
+                        .map(word => word.trim().toUpperCase())
+                        .filter(word => word.length === 4 && /^[A-Z]+$/.test(word));
+                    
+                    if (loadedWords.length > 0) {
+                        hillWords = loadedWords;
+                        hillWordsLoaded = true;
+                        console.log(`Loaded ${hillWords.length} hill words from file`);
+                    }
                 } catch (e) {
-                    console.log('Using default hill words');
-                    hillWords = defaultHillWords;
+                    console.log('Could not load hillWords2.txt:', e.message);
                 }
 
                 // Try to load quotes.txt
                 try {
                     const quotesData = await window.fs.readFile('quotes.txt', { encoding: 'utf8' });
-                    quotes = quotesData.split('\n').map(quote => quote.trim()).filter(quote => quote.length > 0);
+                    const loadedQuotes = quotesData
+                        .split(/[\r\n]+/)
+                        .map(quote => quote.trim())
+                        .filter(quote => quote.length > 10);
+                    
+                    if (loadedQuotes.length > 0) {
+                        quotes = loadedQuotes;
+                        quotesLoaded = true;
+                        console.log(`Loaded ${quotes.length} quotes from file`);
+                    }
                 } catch (e) {
-                    console.log('Using default quotes');
-                    quotes = defaultQuotes;
+                    console.log('Could not load quotes.txt:', e.message);
                 }
+
+                // Show status message
+                if (hillWordsLoaded && quotesLoaded) {
+                    showStatus('Successfully loaded both hillWords2.txt and quotes.txt!', 'success');
+                } else if (hillWordsLoaded || quotesLoaded) {
+                    const loaded = hillWordsLoaded ? 'hillWords2.txt' : 'quotes.txt';
+                    const failed = hillWordsLoaded ? 'quotes.txt' : 'hillWords2.txt';
+                    showStatus(`Loaded ${loaded}. Using defaults for ${failed}.`, 'warning');
+                } else {
+                    showStatus('Could not load files. Using default data.', 'warning');
+                }
+
             } catch (e) {
-                console.log('File system not available, using defaults');
-                hillWords = defaultHillWords;
-                quotes = defaultQuotes;
+                console.log('Error during file loading:', e);
+                showStatus('Error loading files. Using default data.', 'warning');
             }
 
+            filesLoaded = true;
             generateNewProblem();
         }
 
@@ -366,6 +440,11 @@
         }
 
         function generateNewProblem() {
+            if (!filesLoaded) {
+                console.log('Files not loaded yet, waiting...');
+                return;
+            }
+
             // Select random key word
             currentKey = hillWords[Math.floor(Math.random() * hillWords.length)];
             currentMatrix = generateKeyMatrix(currentKey);
