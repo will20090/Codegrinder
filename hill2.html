@@ -109,28 +109,6 @@
             font-weight: bold;
             color: #2c3e50;
         }
-        .plaintext-info {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .plaintext-info p {
-            margin: 5px 0;
-            color: #495057;
-        }
-        .plaintext-original {
-            font-style: italic;
-            color: #6c757d;
-        }
-        .plaintext-processed {
-            font-family: monospace;
-            background: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 5px;
-            display: inline-block;
-            margin-top: 5px;
-        }
         .cipher-section {
             display: flex;
             flex-direction: column;
@@ -279,15 +257,6 @@
             </div>
 
             <div class="section">
-                <h2>Plaintext Information</h2>
-                <div class="plaintext-info">
-                    <p><strong>Original Text:</strong> <span id="originalText" class="plaintext-original">Loading...</span></p>
-                    <p><strong>Processed:</strong> <span id="processedText" class="plaintext-processed">Loading...</span></p>
-                    <p><strong>Length:</strong> <span id="textLength">-</span> characters</p>
-                </div>
-            </div>
-
-            <div class="section">
                 <h2>Cipher Text</h2>
                 <div class="cipher-section" id="cipherSection">
                     <div class="loading">Loading...</div>
@@ -298,7 +267,6 @@
                 <button class="btn btn-primary" onclick="generateNewProblem()">New Problem</button>
                 <button class="btn btn-secondary" onclick="checkAnswer()">Check Answer</button>
                 <button class="btn btn-secondary" onclick="showSolution()">Show Solution</button>
-                <button class="btn btn-secondary" onclick="toggleDebug()">Debug Info</button>
             </div>
 
             <div id="debugInfo" class="debug-info" style="display: none;"></div>
@@ -322,23 +290,6 @@
             "Not loaded right."
         ];
 
-        function logDebug(message) {
-            console.log(message);
-            if (debugMode) {
-                const debugEl = document.getElementById('debugInfo');
-                debugEl.innerHTML += new Date().toLocaleTimeString() + ': ' + message + '\n';
-                debugEl.scrollTop = debugEl.scrollHeight;
-            }
-        }
-
-        function toggleDebug() {
-            debugMode = !debugMode;
-            const debugEl = document.getElementById('debugInfo');
-            debugEl.style.display = debugMode ? 'block' : 'none';
-            if (debugMode) {
-                debugEl.innerHTML = 'Debug mode enabled\n';
-            }
-        }
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('statusMessage');
