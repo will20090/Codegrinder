@@ -421,6 +421,7 @@
         let letterFrequencies = {};
         let currentKeyword = '';
         let currentMethod = '';
+        let currentShift = 0;
         let quotes = [];
         let words = [];
         let filesLoaded = false;
@@ -514,22 +515,263 @@
             generateNewProblem();
         }
 
-       function createKeywordAlphabet(keyword, shift = 0) {
-            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            // Remove duplicates from keyword and keep only letters
-            const uniqueKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c));
-            // Get remaining letters not in keyword
-            const remaining = alphabet.split('').filter(c => !uniqueKeyword.includes(c));
-            // Combine keyword + remaining letters
-            let keywordAlphabet = uniqueKeyword.concat(remaining).join('');
+        // Rotate array elements to the right
+        function rotateArray(arr, positions) {
+            const len = arr.length;
+            const normalizedPositions = positions % len;
+            if (normalizedPositions === 0) return arr;
             
-            // Apply shift if specified
-            if (shift > 0) {
-                const shiftAmount = shift % 26;
-                keywordAlphabet = keywordAlphabet.slice(shiftAmount) + keywordAlphabet.slice(0, shiftAmount);
+            return arr.slice(-normalizedPositions).concat(arr.slice(0, -normalizedPositions));
+        }
+
+        // Generate K1 cipher using Java logic
+        function generateK1Cipher(keyword) {
+            const cipher = new Map();
+            const plaintextAlphabet = [];
+            
+            // Add keyword letters first (no duplicates)
+            for (const c of keyword.toUpperCase()) {
+                if (/[A-Z]/.test(c) && !plaintextAlphabet.includes(c)) {
+                    plaintextAlphabet.push(c);
+                }
             }
             
-            return keywordAlphabet;
+            // Add remaining letters
+            for (let c = 65; c <= 90; c++) { // A-Z
+                const char = String.fromCharCode(c);
+                if (!plaintextAlphabet.includes(char)) {
+                    plaintextAlphabet.push(char);
+                }
+            }
+            
+            // Create standard cipher alphabet
+            const cipherAlphabet = [];
+            for (let c = 65; c <= 90; c++) {
+                cipherAlphabet.push(String.fromCharCode(c));
+            }
+            
+            // Apply rotation
+            const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
+            
+            // Check for self-mappings and fix them
+            for (let i = 0; i < 26; i++) {
+                if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                    // Swap with next position
+                    const swapIndex = (i + 1) % 26;
+                    const temp = rotatedCipher[swapIndex];
+                    rotatedCipher[swapIndex] = rotatedCipher[i];
+                    rotatedCipher[i] = temp;
+                    
+                    // Check if swap created another self-mapping
+                    if (plaintextAlphabet[swapIndex] === rotatedCipher[swapIndex]) {
+                        const nextIndex = (swapIndex + 1) % 26;
+                        const temp2 = rotatedCipher[nextIndex];
+                        rotatedCipher[nextIndex] = rotatedCipher[swapIndex];
+                        rotatedCipher[swapIndex] = temp2;
+                    }
+                }
+            }
+            
+            // Final check to ensure no self-mappings
+            let needFixing;
+            do {
+                needFixing = false;
+                for (let i = 0; i < 26; i++) {
+                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                        needFixing = true;
+                        // Find a position that doesn't create self-mapping
+                        for (let j = 0; j < 26; j++) {
+                            if (i !== j && 
+                                plaintextAlphabet[j] !== rotatedCipher[i] && 
+                                plaintextAlphabet[i] !== rotatedCipher[j]) {
+                                // Swap them
+                                const temp = rotatedCipher[j];
+                                rotatedCipher[j] = rotatedCipher[i];
+                                rotatedCipher[i] = temp;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } while (needFixing);
+            
+            // Create the final mapping
+            for (let i = 0; i < 26; i++) {
+                cipher.set(plaintextAlphabet[i], rotatedCipher[i]);
+            }
+            
+            return cipher;
+        }
+
+        // Generate K2 cipher using Java logic
+        function generateK2Cipher(keyword) {
+            const cipher = new Map();
+            const plaintextAlphabet = [];
+            
+            // Standard plaintext alphabet
+            for (let c = 65; c <= 90; c++) {
+                plaintextAlphabet.push(String.fromCharCode(c));
+            }
+            
+            const cipherAlphabet = [];
+            const used = new Set();
+            
+            // Clean keyword - remove duplicates
+            const cleanKeyword = [];
+            for (const c of keyword.toUpperCase()) {
+                if (/[A-Z]/.test(c) && !used.has(c)) {
+                    cleanKeyword.push(c);
+                    used.add(c);
+                }
+            }
+            used.clear();
+            
+            let keyIndex = 0;
+            let alphabetIndex = 0;
+            
+            // Build cipher alphabet: keyword first, then remaining letters
+            while (cipherAlphabet.length < 26) {
+                if (keyIndex < cleanKeyword.length) {
+                    const k = cleanKeyword[keyIndex++];
+                    if (!used.has(k)) {
+                        cipherAlphabet.push(k);
+                        used.add(k);
+                    }
+                }
+                
+                while (alphabetIndex < 26 && cipherAlphabet.length < 26) {
+                    const a = String.fromCharCode(65 + alphabetIndex++);
+                    if (!used.has(a)) {
+                        cipherAlphabet.push(a);
+                        used.add(a);
+                        break;
+                    }
+                }
+            }
+            
+            // Apply rotation
+            const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
+            
+            // Fix self-mappings
+            for (let i = 0; i < 26; i++) {
+                if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                    // Find a position that doesn't have self-mapping
+                    for (let j = 0; j < 26; j++) {
+                        if (i !== j && plaintextAlphabet[j] !== rotatedCipher[j]) {
+                            // Swap them
+                            const temp = rotatedCipher[j];
+                            rotatedCipher[j] = rotatedCipher[i];
+                            rotatedCipher[i] = temp;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Final check to ensure no self-mappings
+            let needFixing;
+            do {
+                needFixing = false;
+                for (let i = 0; i < 26; i++) {
+                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                        needFixing = true;
+                        // Find a position that doesn't create self-mapping after fixes
+                        for (let j = 0; j < 26; j++) {
+                            if (i !== j && 
+                                plaintextAlphabet[j] !== rotatedCipher[i] && 
+                                plaintextAlphabet[i] !== rotatedCipher[j]) {
+                                // Swap them
+                                const temp = rotatedCipher[j];
+                                rotatedCipher[j] = rotatedCipher[i];
+                                rotatedCipher[i] = temp;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } while (needFixing);
+            
+            // Create the final mapping
+            for (let i = 0; i < 26; i++) {
+                cipher.set(plaintextAlphabet[i], rotatedCipher[i]);
+            }
+            
+            return cipher;
+        }
+
+        // Generate K3 cipher using Java logic
+        function generateK3Cipher(keyword) {
+            const cipher = new Map();
+            const plaintextAlphabet = [];
+            const usedLetters = new Set();
+            
+            // Add keyword letters first
+            for (const c of keyword.toUpperCase()) {
+                if (/[A-Z]/.test(c) && !usedLetters.has(c)) {
+                    plaintextAlphabet.push(c);
+                    usedLetters.add(c);
+                }
+            }
+            
+            // Add remaining letters
+            for (let c = 65; c <= 90; c++) {
+                const char = String.fromCharCode(c);
+                if (!usedLetters.has(char)) {
+                    plaintextAlphabet.push(char);
+                }
+            }
+            
+            // For K3, cipher alphabet is plaintext alphabet REVERSED
+            const cipherAlphabet = [...plaintextAlphabet].reverse();
+            
+            // Apply rotation
+            const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
+            
+            // Fix self-mappings
+            for (let i = 0; i < 26; i++) {
+                if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                    // Find a position that doesn't have self-mapping
+                    for (let j = 0; j < 26; j++) {
+                        if (i !== j && plaintextAlphabet[j] !== rotatedCipher[j]) {
+                            // Swap them
+                            const temp = rotatedCipher[j];
+                            rotatedCipher[j] = rotatedCipher[i];
+                            rotatedCipher[i] = temp;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Final check to ensure no self-mappings
+            let needFixing;
+            do {
+                needFixing = false;
+                for (let i = 0; i < 26; i++) {
+                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
+                        needFixing = true;
+                        // Find a position that doesn't create self-mapping after fixes
+                        for (let j = 0; j < 26; j++) {
+                            if (i !== j && 
+                                plaintextAlphabet[j] !== rotatedCipher[i] && 
+                                plaintextAlphabet[i] !== rotatedCipher[j]) {
+                                // Swap them
+                                const temp = rotatedCipher[j];
+                                rotatedCipher[j] = rotatedCipher[i];
+                                rotatedCipher[i] = temp;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } while (needFixing);
+            
+            // Create the final mapping
+            for (let i = 0; i < 26; i++) {
+                cipher.set(plaintextAlphabet[i], rotatedCipher[i]);
+            }
+            
+            return cipher;
         }
 
         function generateRandomMapping() {
@@ -548,79 +790,17 @@
                 }
             }
             
-            const mapping = {};
+            const mapping = new Map();
             for (let i = 0; i < 26; i++) {
-                mapping[alphabet[i]] = shuffled[i];
+                mapping.set(alphabet[i], shuffled[i]);
             }
-            return mapping;
-        }
-
-        function generateKeywordMapping(method) {
-            const keyword = words[Math.floor(Math.random() * words.length)];
-            currentKeyword = keyword;
-            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const shift = Math.floor(Math.random() * 25) + 1; // Random shift 1-25
-            
-            logDebug(`Using keyword: ${keyword} for method ${method} with shift ${shift}`);
-            
-            let plainAlphabet = alphabet;
-            let cipherAlphabet = alphabet;
-            
-            switch (method) {
-                case 'k1':
-                    // K1: Keyword in plaintext alphabet (shifted), random cipher alphabet
-                    plainAlphabet = createKeywordAlphabet(keyword, shift);
-                    cipherAlphabet = alphabet.split('').sort(() => Math.random() - 0.5).join('');
-                    break;
-                case 'k2':
-                    // K2: Normal plaintext alphabet, keyword in cipher alphabet (shifted)
-                    plainAlphabet = alphabet;
-                    cipherAlphabet = createKeywordAlphabet(keyword, shift);
-                    break;
-                case 'k3':
-                    // K3: Keyword in both alphabets (different shifts)
-                    const shift2 = (shift + Math.floor(Math.random() * 24) + 1) % 26;
-                    plainAlphabet = createKeywordAlphabet(keyword, shift);
-                    cipherAlphabet = createKeywordAlphabet(keyword, shift2);
-                    break;
-            }
-            
-            // Create mapping
-            const mapping = {};
-            for (let i = 0; i < 26; i++) {
-                mapping[plainAlphabet[i]] = cipherAlphabet[i];
-            }
-            
-            // Ensure no self-mapping by swapping if necessary
-            for (let i = 0; i < 26; i++) {
-                if (plainAlphabet[i] === cipherAlphabet[i]) {
-                    // Find another position to swap with
-                    let swapIndex = (i + 1) % 26;
-                    while (swapIndex === i || plainAlphabet[swapIndex] === cipherAlphabet[swapIndex]) {
-                        swapIndex = (swapIndex + 1) % 26;
-                    }
-                    // Swap in cipher alphabet
-                    const temp = cipherAlphabet[i];
-                    cipherAlphabet = cipherAlphabet.substring(0, i) + cipherAlphabet[swapIndex] + 
-                                   cipherAlphabet.substring(i + 1, swapIndex) + temp + 
-                                   cipherAlphabet.substring(swapIndex + 1);
-                    
-                    // Update mapping
-                    mapping[plainAlphabet[i]] = cipherAlphabet[i];
-                    mapping[plainAlphabet[swapIndex]] = cipherAlphabet[swapIndex];
-                }
-            }
-            
-            logDebug(`Plain alphabet: ${plainAlphabet}`);
-            logDebug(`Cipher alphabet: ${cipherAlphabet}`);
-            
             return mapping;
         }
 
         function encryptText(text, mapping) {
             return text.toUpperCase().split('').map(char => {
                 if (char.match(/[A-Z]/)) {
-                    return mapping[char];
+                    return mapping.get(char);
                 }
                 return char;
             }).join('');
@@ -662,17 +842,28 @@
             // Generate cipher mapping based on selected method
             const method = getSelectedKeyMethod();
             currentMethod = method;
+            currentShift = Math.floor(Math.random() * 25) + 1; // Random shift 1-25
             
             if (method === 'random') {
                 cipherMapping = generateRandomMapping();
                 currentKeyword = '';
             } else {
-                cipherMapping = generateKeywordMapping(method);
+                // Select random keyword
+                const keyword = words[Math.floor(Math.random() * words.length)];
+                currentKeyword = keyword;
+            }
+            if (method === 'k1') {
+                    cipherMapping = generateK1Cipher(keyword);
+                } else if (method === 'k2') {
+                    cipherMapping = generateK2Cipher(keyword);
+                } else if (method === 'k3') {
+                    cipherMapping = generateK3Cipher(keyword);
+                }
             }
             
             // Create reverse mapping
             reverseMapping = {};
-            for (const [plain, cipher] of Object.entries(cipherMapping)) {
+            for (let [plain, cipher] of cipherMapping) {
                 reverseMapping[cipher] = plain;
             }
             
@@ -682,156 +873,93 @@
             // Calculate frequencies
             letterFrequencies = calculateFrequencies(currentCiphertext);
             
-            logDebug(`Plaintext: "${currentPlaintext}"`);
-            logDebug(`Ciphertext: "${currentCiphertext}"`);
-            logDebug('Cipher mapping:', cipherMapping);
-            if (currentKeyword) {
-                logDebug(`Keyword: ${currentKeyword}`);
-            }
-            
-            updateDisplay();
-        }
-
-        function wrapTextIntoLines(text, maxWidth = 800) {
-            const words = text.split(' ');
-            const lines = [];
-            let currentLine = [];
-            let currentWidth = 0;
-            const charWidth = 30; // Approximate width per character including spacing
-            
-            for (let word of words) {
-                const wordWidth = word.length * charWidth;
-                
-                if (currentWidth + wordWidth > maxWidth && currentLine.length > 0) {
-                    lines.push(currentLine.join(' '));
-                    currentLine = [word];
-                    currentWidth = wordWidth;
-                } else {
-                    currentLine.push(word);
-                    currentWidth += wordWidth + (currentLine.length > 1 ? charWidth : 0); // Add space width
-                }
-            }
-            
-            if (currentLine.length > 0) {
-                lines.push(currentLine.join(' '));
-            }
-            
-            return lines;
-        }
-
-        function updateDisplay() {
-            const cipherSection = document.getElementById('cipherSection');
-            cipherSection.innerHTML = '';
-            
-            // Wrap text into lines to prevent word breaking
-            const lines = wrapTextIntoLines(currentCiphertext);
-            
-            lines.forEach((line, lineIndex) => {
-                const textLine = document.createElement('div');
-                textLine.className = 'cipher-text-line';
-                
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    
-                    if (char === ' ') {
-                        // Add space marker
-                        const spaceDiv = document.createElement('div');
-                        spaceDiv.className = 'space-marker';
-                        spaceDiv.innerHTML = '&nbsp;';
-                        textLine.appendChild(spaceDiv);
-                    } else if (char.match(/[A-Z]/)) {
-                        // Add cipher letter with input box
-                        const pairDiv = document.createElement('div');
-                        pairDiv.className = 'cipher-pair';
-                        
-                        const cipherDiv = document.createElement('div');
-                        cipherDiv.className = 'cipher-letter';
-                        cipherDiv.textContent = char;
-                        
-                        const answerInput = document.createElement('input');
-                        answerInput.type = 'text';
-                        answerInput.className = 'answer-box';
-                        answerInput.maxLength = 1;
-                        answerInput.dataset.cipher = char;
-                        answerInput.dataset.position = `${lineIndex}-${i}`;
-                        
-                        answerInput.addEventListener('input', handleAnswerInput);
-                        answerInput.addEventListener('keydown', handleKeyDown);
-                        
-                        pairDiv.appendChild(cipherDiv);
-                        pairDiv.appendChild(answerInput);
-                        textLine.appendChild(pairDiv);
-                    }
-                }
-                
-                cipherSection.appendChild(textLine);
-            });
-            
-            updateFrequencyTable();
-        }
-
-        function handleAnswerInput(e) {
-            const value = e.target.value.toUpperCase();
-            if (value.match(/[A-Z]/)) {
-                e.target.value = value;
-                
-                // Auto-fill if enabled
-                if (document.getElementById('autofill').checked) {
-                    const cipherLetter = e.target.dataset.cipher;
-                    const allBoxes = document.querySelectorAll(`input[data-cipher="${cipherLetter}"]`);
-                    allBoxes.forEach(box => {
-                        box.value = value;
-                    });
-                    
-                    // Update frequency table
-                    const freqInput = document.querySelector(`input[data-freq-cipher="${cipherLetter}"]`);
-                    if (freqInput) {
-                        freqInput.value = value;
-                    }
-                }
-                
-                // Move to next box
-                moveToNextBox(e.target);
+            // Show/hide keyword guess section
+            const keywordGuessEl = document.getElementById('keywordGuess');
+            if (method !== 'random') {
+                keywordGuessEl.style.display = 'block';
+                document.getElementById('keywordInput').value = '';
             } else {
-                e.target.value = '';
+                keywordGuessEl.style.display = 'none';
             }
-        }
-
-        function handleKeyDown(e) {
-            if (e.key === 'Backspace' && !e.target.value) {
-                moveToPrevBox(e.target);
-            }
-        }
-
-        function moveToNextBox(currentBox) {
-            const allBoxes = Array.from(document.querySelectorAll('.answer-box'));
-            const currentIndex = allBoxes.indexOf(currentBox);
-            if (currentIndex < allBoxes.length - 1) {
-                allBoxes[currentIndex + 1].focus();
-            }
-        }
-
-        function moveToPrevBox(currentBox) {
-            const allBoxes = Array.from(document.querySelectorAll('.answer-box'));
-            const currentIndex = allBoxes.indexOf(currentBox);
-            if (currentIndex > 0) {
-                allBoxes[currentIndex - 1].focus();
-            }
-        }
-
-        function updateFrequencyTable() {
-            const freqTable = document.getElementById('freqTable');
-            freqTable.innerHTML = '';
             
-            // Create entries for all 26 letters in alphabetical order
-            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            // Display the cipher
+            displayCipher();
+            displayFrequencyTable();
             
-            for (let i = 0; i < 26; i++) {
-                const letter = alphabet[i];
-                const count = letterFrequencies[letter] || 0;
+            logDebug(`Generated ${method} cipher with keyword: ${currentKeyword}`);
+            showStatus('New problem generated!', 'success');
+        }
+
+        function displayCipher() {
+            const container = document.getElementById('cipherSection');
+            container.innerHTML = '';
+            
+            const words = currentCiphertext.split(/\s+/);
+            let currentLine = document.createElement('div');
+            currentLine.className = 'cipher-text-line';
+            
+            for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+                const word = words[wordIndex];
                 
-                const entryDiv = document.createElement('div');
-                entryDiv.className = 'freq-entry';
+                // Add space marker if not first word in line
+                if (currentLine.children.length > 0) {
+                    const spaceMarker = document.createElement('div');
+                    spaceMarker.className = 'space-marker';
+                    spaceMarker.textContent = '|';
+                    currentLine.appendChild(spaceMarker);
+                }
+                
+                // Add each letter of the word
+                for (let i = 0; i < word.length; i++) {
+                    const letter = word[i];
+                    if (letter.match(/[A-Z]/)) {
+                        const pair = document.createElement('div');
+                        pair.className = 'cipher-pair';
+                        
+                        const cipherLetter = document.createElement('div');
+                        cipherLetter.className = 'cipher-letter';
+                        cipherLetter.textContent = letter;
+                        
+                        const answerBox = document.createElement('input');
+                        answerBox.type = 'text';
+                        answerBox.className = 'answer-box';
+                        answerBox.maxLength = 1;
+                        answerBox.dataset.cipher = letter;
+                        answerBox.addEventListener('input', handleAnswerInput);
+                        answerBox.addEventListener('keydown', handleKeyNavigation);
+                        
+                        pair.appendChild(cipherLetter);
+                        pair.appendChild(answerBox);
+                        currentLine.appendChild(pair);
+                    }
+                }
+                
+                // Check if we need to start a new line (every 10-12 words approximately)
+                if (wordIndex > 0 && wordIndex % 10 === 0) {
+                    container.appendChild(currentLine);
+                    currentLine = document.createElement('div');
+                    currentLine.className = 'cipher-text-line';
+                }
+            }
+            
+            // Add the last line if it has content
+            if (currentLine.children.length > 0) {
+                container.appendChild(currentLine);
+            }
+        }
+
+        function displayFrequencyTable() {
+            const container = document.getElementById('freqTable');
+            container.innerHTML = '';
+            
+            // Get all cipher letters A-Z and sort by frequency
+            const sortedLetters = Object.keys(letterFrequencies)
+                .sort((a, b) => letterFrequencies[b] - letterFrequencies[a]);
+            
+            // Add entries for letters that appear in cipher
+            sortedLetters.forEach(letter => {
+                const entry = document.createElement('div');
+                entry.className = 'freq-entry';
                 
                 const cipherDiv = document.createElement('div');
                 cipherDiv.className = 'freq-cipher';
@@ -839,172 +967,196 @@
                 
                 const countDiv = document.createElement('div');
                 countDiv.className = 'freq-count';
-                countDiv.textContent = count;
+                countDiv.textContent = letterFrequencies[letter];
                 
                 const input = document.createElement('input');
-               input.type = 'text';
+                input.type = 'text';
                 input.className = 'freq-input';
                 input.maxLength = 1;
-                input.dataset.freqCipher = letter;
+                input.dataset.cipher = letter;
+                input.addEventListener('input', handleFreqInput);
                 
-                input.addEventListener('input', (e) => {
-                    const value = e.target.value.toUpperCase();
-                    if (value.match(/[A-Z]/)) {
-                        e.target.value = value;
-                        
-                        // Auto-fill matching boxes if enabled
-                        if (document.getElementById('autofill').checked) {
-                            const cipherLetter = e.target.dataset.freqCipher;
-                            const allBoxes = document.querySelectorAll(`input[data-cipher="${cipherLetter}"]`);
-                            allBoxes.forEach(box => {
-                                box.value = value;
-                            });
-                        }
-                    } else {
-                        e.target.value = '';
-                    }
-                });
-                
-                entryDiv.appendChild(cipherDiv);
-                entryDiv.appendChild(countDiv);
-                entryDiv.appendChild(input);
-                freqTable.appendChild(entryDiv);
-            }
+                entry.appendChild(cipherDiv);
+                entry.appendChild(countDiv);
+                entry.appendChild(input);
+                container.appendChild(entry);
+            });
+        }
+
+        function handleAnswerInput(event) {
+            const input = event.target;
+            const value = input.value.toUpperCase();
             
-            // Show keyword guess section for K methods
-            const keywordGuessDiv = document.getElementById('keywordGuess');
-            if (currentMethod !== 'random' && currentMethod !== '') {
-                keywordGuessDiv.style.display = 'block';
+            if (value && value.match(/[A-Z]/)) {
+                input.value = value;
+                
+                // Auto-fill if enabled
+                if (document.getElementById('autofill').checked) {
+                    const cipherLetter = input.dataset.cipher;
+                    fillMatchingLetters(cipherLetter, value);
+                }
             } else {
-                keywordGuessDiv.style.display = 'none';
+                input.value = '';
             }
         }
 
-        function checkKeyword() {
-            const guessInput = document.getElementById('keywordInput');
-            const guess = guessInput.value.toUpperCase().trim();
+        function handleFreqInput(event) {
+            const input = event.target;
+            const value = input.value.toUpperCase();
             
-            if (!guess) {
-                showStatus('Please enter a keyword guess', 'warning');
-                return;
-            }
-            
-            if (guess === currentKeyword) {
-                showStatus(`Correct! The keyword is "${currentKeyword}"`, 'success');
+            if (value && value.match(/[A-Z]/)) {
+                input.value = value;
+                
+                // Auto-fill cipher if enabled
+                if (document.getElementById('autofill').checked) {
+                    const cipherLetter = input.dataset.cipher;
+                    fillMatchingLetters(cipherLetter, value);
+                }
             } else {
-                showStatus(`Incorrect. The keyword is not "${guess}"`, 'error');
+                input.value = '';
             }
+        }
+
+        function fillMatchingLetters(cipherLetter, plainLetter) {
+            // Fill all cipher inputs
+            const cipherInputs = document.querySelectorAll(`.answer-box[data-cipher="${cipherLetter}"]`);
+            cipherInputs.forEach(input => {
+                input.value = plainLetter;
+            });
             
-            guessInput.value = '';
+            // Fill frequency table input
+            const freqInput = document.querySelector(`.freq-input[data-cipher="${cipherLetter}"]`);
+            if (freqInput) {
+                freqInput.value = plainLetter;
+            }
+        }
+
+        function handleKeyNavigation(event) {
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                const inputs = Array.from(document.querySelectorAll('.answer-box'));
+                const currentIndex = inputs.indexOf(event.target);
+                
+                if (event.key === 'ArrowRight' && currentIndex < inputs.length - 1) {
+                    inputs[currentIndex + 1].focus();
+                } else if (event.key === 'ArrowLeft' && currentIndex > 0) {
+                    inputs[currentIndex - 1].focus();
+                }
+            }
         }
 
         function checkAnswer() {
-            const answerBoxes = document.querySelectorAll('.answer-box');
-            let correctCount = 0;
-            let totalCount = 0;
+            const inputs = document.querySelectorAll('.answer-box');
+            let correct = 0;
+            let total = 0;
             
-            answerBoxes.forEach(box => {
-                const cipherLetter = box.dataset.cipher;
+            inputs.forEach(input => {
+                const cipherLetter = input.dataset.cipher;
+                const userAnswer = input.value.toUpperCase();
                 const correctAnswer = reverseMapping[cipherLetter];
-                const userAnswer = box.value.toUpperCase();
                 
-                totalCount++;
+                total++;
                 if (userAnswer === correctAnswer) {
-                    correctCount++;
-                    box.style.backgroundColor = '#d4edda';
-                    box.style.borderColor = '#28a745';
+                    correct++;
+                    input.style.backgroundColor = '#d4edda';
+                    input.style.borderColor = '#28a745';
                 } else if (userAnswer) {
-                    box.style.backgroundColor = '#f8d7da';
-                    box.style.borderColor = '#dc3545';
+                    input.style.backgroundColor = '#f8d7da';
+                    input.style.borderColor = '#dc3545';
                 } else {
-                    box.style.backgroundColor = 'white';
-                    box.style.borderColor = '#3498db';
+                    input.style.backgroundColor = 'white';
+                    input.style.borderColor = '#3498db';
                 }
             });
             
-            const percentage = Math.round((correctCount / totalCount) * 100);
+            const percentage = Math.round((correct / total) * 100);
+            let message = `${correct}/${total} correct (${percentage}%)`;
+            let type = 'warning';
             
-            if (correctCount === totalCount) {
-                showStatus(`Perfect! You solved the cipher completely! (${correctCount}/${totalCount} - ${percentage}%)`, 'success');
+            if (percentage === 100) {
+                message += ' - Perfect!';
+                type = 'success';
             } else if (percentage >= 80) {
-                showStatus(`Great job! You're almost there! (${correctCount}/${totalCount} - ${percentage}%)`, 'success');
-            } else if (percentage >= 50) {
-                showStatus(`Good progress! Keep working! (${correctCount}/${totalCount} - ${percentage}%)`, 'warning');
+                message += ' - Great job!';
+                type = 'success';
+            } else if (percentage >= 60) {
+                message += ' - Good progress!';
             } else {
-                showStatus(`Keep trying! (${correctCount}/${totalCount} - ${percentage}%)`, 'error');
+                message += ' - Keep trying!';
+                type = 'error';
             }
+            
+            showStatus(message, type);
         }
 
         function showSolution() {
-            const answerBoxes = document.querySelectorAll('.answer-box');
+            const inputs = document.querySelectorAll('.answer-box');
+            inputs.forEach(input => {
+                const cipherLetter = input.dataset.cipher;
+                const correctAnswer = reverseMapping[cipherLetter];
+                input.value = correctAnswer;
+                input.style.backgroundColor = '#d1ecf1';
+                input.style.borderColor = '#17a2b8';
+            });
+            
             const freqInputs = document.querySelectorAll('.freq-input');
-            
-            answerBoxes.forEach(box => {
-                const cipherLetter = box.dataset.cipher;
-                const correctAnswer = reverseMapping[cipherLetter];
-                box.value = correctAnswer;
-                box.style.backgroundColor = '#d1ecf1';
-                box.style.borderColor = '#17a2b8';
-            });
-            
             freqInputs.forEach(input => {
-                const cipherLetter = input.dataset.freqCipher;
+                const cipherLetter = input.dataset.cipher;
                 const correctAnswer = reverseMapping[cipherLetter];
-                if (correctAnswer) {
-                    input.value = correctAnswer;
-                }
+                input.value = correctAnswer;
             });
             
-            let solutionMessage = `Solution revealed! The decrypted text is: "${currentPlaintext}"`;
-            if (currentKeyword) {
-                solutionMessage += ` | Keyword: "${currentKeyword}" (Method: ${currentMethod.toUpperCase()})`;
-            }
-            
-            showStatus(solutionMessage, 'success');
+            showStatus('Solution revealed!', 'success');
         }
 
         function clearAnswer() {
-            const answerBoxes = document.querySelectorAll('.answer-box');
-            const freqInputs = document.querySelectorAll('.freq-input');
-            
-            answerBoxes.forEach(box => {
-                box.value = '';
-                box.style.backgroundColor = 'white';
-                box.style.borderColor = '#3498db';
-            });
-            
-            freqInputs.forEach(input => {
+            const inputs = document.querySelectorAll('.answer-box, .freq-input');
+            inputs.forEach(input => {
                 input.value = '';
+                input.style.backgroundColor = 'white';
+                input.style.borderColor = input.classList.contains('answer-box') ? '#3498db' : '#3498db';
             });
             
-            document.getElementById('keywordInput').value = '';
             showStatus('Answer cleared!', 'warning');
         }
 
-        // Event listeners for radio buttons
-        document.querySelectorAll('input[name="keyMethod"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                // Don't auto-generate, let user click "New Problem"
-                const keywordGuessDiv = document.getElementById('keywordGuess');
-                if (radio.value !== 'random') {
-                    keywordGuessDiv.style.display = 'block';
-                } else {
-                    keywordGuessDiv.style.display = 'none';
-                }
-            });
-        });
-
-        // Allow Enter key to check keyword
-        document.getElementById('keywordInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkKeyword();
+        function checkKeyword() {
+            const userKeyword = document.getElementById('keywordInput').value.toUpperCase().trim();
+            
+            if (!userKeyword) {
+                showStatus('Please enter a keyword!', 'error');
+                return;
             }
+            
+            if (userKeyword === currentKeyword) {
+                showStatus('Correct keyword!', 'success');
+                document.getElementById('keywordInput').style.backgroundColor = '#d4edda';
+                document.getElementById('keywordInput').style.borderColor = '#28a745';
+            } else {
+                showStatus('Incorrect keyword. Try again!', 'error');
+                document.getElementById('keywordInput').style.backgroundColor = '#f8d7da';
+                document.getElementById('keywordInput').style.borderColor = '#dc3545';
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            logDebug('Page loaded, initializing...');
+            loadFiles();
         });
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-            logDebug('DOM loaded, starting application...');
-            loadFiles();
+        // Add event listeners for radio buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const radios = document.querySelectorAll('input[name="keyMethod"]');
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const keywordGuessEl = document.getElementById('keywordGuess');
+                    if (radio.value !== 'random') {
+                        keywordGuessEl.style.display = 'block';
+                    } else {
+                        keywordGuessEl.style.display = 'none';
+                    }
+                });
+            });
         });
     </script>
 </body>
