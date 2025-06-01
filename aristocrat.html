@@ -435,14 +435,20 @@
             "In the beginning was the Word.",
             "Knowledge is power and power corrupts.",
             "Time heals all wounds but leaves ugly scars.",
-            "The pen is mightier than the sword."
+            "The pen is mightier than the sword.",
+            "Actions speak louder than words.",
+            "Better late than never but never late is better.",
+            "Where there is a will there is a way.",
+            "Practice makes perfect but nobody is perfect.",
+            "Life is what happens when you are busy making other plans."
         ];
         
         const defaultWords = [
-            "ARGENTINA", "BUTTERFLY", "ETHICAL", "COMPUTER", "ELEPHANT", "FREEDOM",
-            "GOVERNMENT", "HOSPITAL", "INTERNET", "JUSTICE", "KEYBOARD", "LIBERTY",
-            "MOUNTAIN", "NEIGHBOR", "OPPOSITE", "PATIENCE", "QUESTION", "REPUBLIC",
-            "STRENGTH", "TOGETHER", "UNIVERSE", "VICTORY", "WONDERFUL", "EXAMPLE"
+            "ARGENTINA", "BUTTERFLY", "COMPUTER", "ELEPHANT", "FREEDOM",
+            "GOVERNMENT", "HOSPITAL", "INTERNET", "JUSTICE", "KEYBOARD", 
+            "LIBERTY", "MOUNTAIN", "NEIGHBOR", "OPPOSITE", "PATIENCE", 
+            "QUESTION", "REPUBLIC", "STRENGTH", "TOGETHER", "UNIVERSE", 
+            "VICTORY", "WONDERFUL", "EXAMPLE", "BUILDING", "CHANNEL"
         ];
 
         function logDebug(message) {
@@ -459,21 +465,6 @@
                 statusEl.style.display = 'none';
             }, 5000);
         }
-
-        // Event listeners for radio buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const radioButtons = document.querySelectorAll('input[name="keyMethod"]');
-            radioButtons.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const keywordGuess = document.getElementById('keywordGuess');
-                    if (this.value !== 'random') {
-                        keywordGuess.style.display = 'block';
-                    } else {
-                        keywordGuess.style.display = 'none';
-                    }
-                });
-            });
-        });
 
         async function loadFiles() {
             logDebug('Starting file loading process...');
@@ -837,4 +828,184 @@
             
             for (let i = 0; i < 26; i++) {
                 const letter = alphabet[i];
-                const count = letter
+                const count = letterFrequencies[letter] || 0;
+                
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'freq-entry';
+                
+                const cipherDiv = document.createElement('div');
+                cipherDiv.className = 'freq-cipher';
+                cipherDiv.textContent = letter;
+                
+                const countDiv = document.createElement('div');
+                countDiv.className = 'freq-count';
+                countDiv.textContent = count;
+                
+                const input = document.createElement('input');
+               input.type = 'text';
+                input.className = 'freq-input';
+                input.maxLength = 1;
+                input.dataset.freqCipher = letter;
+                
+                input.addEventListener('input', (e) => {
+                    const value = e.target.value.toUpperCase();
+                    if (value.match(/[A-Z]/)) {
+                        e.target.value = value;
+                        
+                        // Auto-fill matching boxes if enabled
+                        if (document.getElementById('autofill').checked) {
+                            const cipherLetter = e.target.dataset.freqCipher;
+                            const allBoxes = document.querySelectorAll(`input[data-cipher="${cipherLetter}"]`);
+                            allBoxes.forEach(box => {
+                                box.value = value;
+                            });
+                        }
+                    } else {
+                        e.target.value = '';
+                    }
+                });
+                
+                entryDiv.appendChild(cipherDiv);
+                entryDiv.appendChild(countDiv);
+                entryDiv.appendChild(input);
+                freqTable.appendChild(entryDiv);
+            }
+            
+            // Show keyword guess section for K methods
+            const keywordGuessDiv = document.getElementById('keywordGuess');
+            if (currentMethod !== 'random' && currentMethod !== '') {
+                keywordGuessDiv.style.display = 'block';
+            } else {
+                keywordGuessDiv.style.display = 'none';
+            }
+        }
+
+        function checkKeyword() {
+            const guessInput = document.getElementById('keywordInput');
+            const guess = guessInput.value.toUpperCase().trim();
+            
+            if (!guess) {
+                showStatus('Please enter a keyword guess', 'warning');
+                return;
+            }
+            
+            if (guess === currentKeyword) {
+                showStatus(`Correct! The keyword is "${currentKeyword}"`, 'success');
+            } else {
+                showStatus(`Incorrect. The keyword is not "${guess}"`, 'error');
+            }
+            
+            guessInput.value = '';
+        }
+
+        function checkAnswer() {
+            const answerBoxes = document.querySelectorAll('.answer-box');
+            let correctCount = 0;
+            let totalCount = 0;
+            
+            answerBoxes.forEach(box => {
+                const cipherLetter = box.dataset.cipher;
+                const correctAnswer = reverseMapping[cipherLetter];
+                const userAnswer = box.value.toUpperCase();
+                
+                totalCount++;
+                if (userAnswer === correctAnswer) {
+                    correctCount++;
+                    box.style.backgroundColor = '#d4edda';
+                    box.style.borderColor = '#28a745';
+                } else if (userAnswer) {
+                    box.style.backgroundColor = '#f8d7da';
+                    box.style.borderColor = '#dc3545';
+                } else {
+                    box.style.backgroundColor = 'white';
+                    box.style.borderColor = '#3498db';
+                }
+            });
+            
+            const percentage = Math.round((correctCount / totalCount) * 100);
+            
+            if (correctCount === totalCount) {
+                showStatus(`Perfect! You solved the cipher completely! (${correctCount}/${totalCount} - ${percentage}%)`, 'success');
+            } else if (percentage >= 80) {
+                showStatus(`Great job! You're almost there! (${correctCount}/${totalCount} - ${percentage}%)`, 'success');
+            } else if (percentage >= 50) {
+                showStatus(`Good progress! Keep working! (${correctCount}/${totalCount} - ${percentage}%)`, 'warning');
+            } else {
+                showStatus(`Keep trying! (${correctCount}/${totalCount} - ${percentage}%)`, 'error');
+            }
+        }
+
+        function showSolution() {
+            const answerBoxes = document.querySelectorAll('.answer-box');
+            const freqInputs = document.querySelectorAll('.freq-input');
+            
+            answerBoxes.forEach(box => {
+                const cipherLetter = box.dataset.cipher;
+                const correctAnswer = reverseMapping[cipherLetter];
+                box.value = correctAnswer;
+                box.style.backgroundColor = '#d1ecf1';
+                box.style.borderColor = '#17a2b8';
+            });
+            
+            freqInputs.forEach(input => {
+                const cipherLetter = input.dataset.freqCipher;
+                const correctAnswer = reverseMapping[cipherLetter];
+                if (correctAnswer) {
+                    input.value = correctAnswer;
+                }
+            });
+            
+            let solutionMessage = `Solution revealed! The decrypted text is: "${currentPlaintext}"`;
+            if (currentKeyword) {
+                solutionMessage += ` | Keyword: "${currentKeyword}" (Method: ${currentMethod.toUpperCase()})`;
+            }
+            
+            showStatus(solutionMessage, 'success');
+        }
+
+        function clearAnswer() {
+            const answerBoxes = document.querySelectorAll('.answer-box');
+            const freqInputs = document.querySelectorAll('.freq-input');
+            
+            answerBoxes.forEach(box => {
+                box.value = '';
+                box.style.backgroundColor = 'white';
+                box.style.borderColor = '#3498db';
+            });
+            
+            freqInputs.forEach(input => {
+                input.value = '';
+            });
+            
+            document.getElementById('keywordInput').value = '';
+            showStatus('Answer cleared!', 'warning');
+        }
+
+        // Event listeners for radio buttons
+        document.querySelectorAll('input[name="keyMethod"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                // Don't auto-generate, let user click "New Problem"
+                const keywordGuessDiv = document.getElementById('keywordGuess');
+                if (radio.value !== 'random') {
+                    keywordGuessDiv.style.display = 'block';
+                } else {
+                    keywordGuessDiv.style.display = 'none';
+                }
+            });
+        });
+
+        // Allow Enter key to check keyword
+        document.getElementById('keywordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkKeyword();
+            }
+        });
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            logDebug('DOM loaded, starting application...');
+            loadFiles();
+        });
+    </script>
+</body>
+</html>
