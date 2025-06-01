@@ -76,35 +76,83 @@
         }
         .controls {
             display: flex;
-            gap: 20px;
-            align-items: center;
+            gap: 30px;
+            align-items: flex-start;
             flex-wrap: wrap;
             margin-bottom: 20px;
         }
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 10px;
         }
         .control-group label {
             font-weight: bold;
             color: #2c3e50;
-            font-size: 0.9em;
-        }
-        select, input[type="checkbox"] {
-            padding: 8px;
-            border: 2px solid #3498db;
-            border-radius: 5px;
             font-size: 1em;
+            margin-bottom: 5px;
+        }
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .radio-option:hover {
+            background-color: #f8f9fa;
+        }
+        .radio-option input[type="radio"] {
+            margin: 0;
+        }
+        .radio-option label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
         }
         .checkbox-container {
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: pointer;
+            padding: 5px;
         }
         .checkbox-container input[type="checkbox"] {
             width: auto;
             margin: 0;
+        }
+        .keyword-guess {
+            margin-top: 15px;
+        }
+        .keyword-input {
+            padding: 8px 12px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            font-size: 1em;
+            width: 200px;
+            margin-right: 10px;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-small:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .cipher-section {
             display: flex;
@@ -149,6 +197,10 @@
             justify-content: center;
             font-size: 1em;
             color: #6c757d;
+        }
+        .line-break {
+            width: 100%;
+            height: 10px;
         }
         .answer-box {
             width: 28px;
@@ -266,9 +318,6 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        .two-column {
-            display: block;
-        }
         @media (max-width: 768px) {
             .content {
                 padding: 20px;
@@ -306,17 +355,38 @@
                 <h2>Settings</h2>
                 <div class="controls">
                     <div class="control-group">
-                        <label for="keyMethod">Key Method:</label>
-                        <select id="keyMethod">
-                            <option value="random">Random</option>
-                            <option value="k1">K1 (Keyword in Plain)</option>
-                            <option value="k2">K2 (Keyword in Cipher)</option>
-                            <option value="k3">K3 (Keyword in Both)</option>
-                        </select>
+                        <label>Key Method:</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="random" name="keyMethod" value="random" checked>
+                                <label for="random">Random</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="k1" name="keyMethod" value="k1">
+                                <label for="k1">K1</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="k2" name="keyMethod" value="k2">
+                                <label for="k2">K2</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="k3" name="keyMethod" value="k3">
+                                <label for="k3">K3</label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="checkbox-container">
-                        <input type="checkbox" id="autofill" checked>
-                        <label for="autofill">Auto-fill matching letters</label>
+                    <div class="control-group">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="autofill" checked>
+                            <label for="autofill">Auto-fill matching letters</label>
+                        </div>
+                        <div class="keyword-guess" id="keywordGuess" style="display: none;">
+                            <label>Guess Keyword:</label>
+                            <div style="margin-top: 5px;">
+                                <input type="text" id="keywordInput" class="keyword-input" placeholder="Enter keyword">
+                                <button class="btn-small" onclick="checkKeyword()">Check</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -349,6 +419,8 @@
         let cipherMapping = {};
         let reverseMapping = {};
         let letterFrequencies = {};
+        let currentKeyword = '';
+        let currentMethod = '';
         let quotes = [];
         let words = [];
         let filesLoaded = false;
@@ -359,13 +431,18 @@
             "To be or not to be, that is the question.",
             "All that glitters is not gold.",
             "A journey of a thousand miles begins with a single step.",
-            "The only thing we have to fear is fear itself."
+            "The only thing we have to fear is fear itself.",
+            "In the beginning was the Word.",
+            "Knowledge is power and power corrupts.",
+            "Time heals all wounds but leaves ugly scars.",
+            "The pen is mightier than the sword."
         ];
         
         const defaultWords = [
-            "ABLE", "BACK", "CALL", "DOOR", "EACH", "FACE", "GAME", "HAND",
-            "IDEA", "JUMP", "KEEP", "LAST", "MAKE", "NAME", "OPEN", "PART",
-            "QUIT", "READ", "SOME", "TIME", "USED", "VERY", "WORK", "YEAR"
+            "ARGENTINA", "BUTTERFLY", "ETHICAL", "COMPUTER", "ELEPHANT", "FREEDOM",
+            "GOVERNMENT", "HOSPITAL", "INTERNET", "JUSTICE", "KEYBOARD", "LIBERTY",
+            "MOUNTAIN", "NEIGHBOR", "OPPOSITE", "PATIENCE", "QUESTION", "REPUBLIC",
+            "STRENGTH", "TOGETHER", "UNIVERSE", "VICTORY", "WONDERFUL", "EXAMPLE"
         ];
 
         function logDebug(message) {
@@ -382,6 +459,21 @@
                 statusEl.style.display = 'none';
             }, 5000);
         }
+
+        // Event listeners for radio buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const radioButtons = document.querySelectorAll('input[name="keyMethod"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const keywordGuess = document.getElementById('keywordGuess');
+                    if (this.value !== 'random') {
+                        keywordGuess.style.display = 'block';
+                    } else {
+                        keywordGuess.style.display = 'none';
+                    }
+                });
+            });
+        });
 
         async function loadFiles() {
             logDebug('Starting file loading process...');
@@ -431,6 +523,24 @@
             generateNewProblem();
         }
 
+        function createKeywordAlphabet(keyword, shift = 0) {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            // Remove duplicates from keyword
+            const uniqueKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c));
+            // Get remaining letters not in keyword
+            const remaining = alphabet.split('').filter(c => !uniqueKeyword.includes(c));
+            // Combine keyword + remaining letters
+            let combined = uniqueKeyword.concat(remaining);
+            
+            // Apply shift if specified
+            if (shift > 0) {
+                const shiftAmount = shift % 26;
+                combined = combined.slice(shiftAmount).concat(combined.slice(0, shiftAmount));
+            }
+            
+            return combined.join('');
+        }
+
         function generateRandomMapping() {
             const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const shuffled = alphabet.split('').sort(() => Math.random() - 0.5);
@@ -456,57 +566,62 @@
 
         function generateKeywordMapping(method) {
             const keyword = words[Math.floor(Math.random() * words.length)];
+            currentKeyword = keyword;
             const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            
-            logDebug(`Using keyword: ${keyword} for method ${method}`);
-            
-            function createAlphabet(key, shift = 0) {
-                const uniqueKey = [...new Set(key.split(''))];
-                const remaining = alphabet.split('').filter(c => !uniqueKey.includes(c));
-                const combined = uniqueKey.concat(remaining);
-                
-                // Apply shift
-                if (shift > 0) {
-                    const shiftedAlphabet = combined.slice(shift).concat(combined.slice(0, shift));
-                    return shiftedAlphabet.join('');
-                }
-                return combined.join('');
-            }
-            
-            const plainAlphabet = alphabet;
-            let cipherAlphabet = alphabet;
             const shift = Math.floor(Math.random() * 25) + 1; // Random shift 1-25
+            
+            logDebug(`Using keyword: ${keyword} for method ${method} with shift ${shift}`);
+            
+            let plainAlphabet = alphabet;
+            let cipherAlphabet = alphabet;
             
             switch (method) {
                 case 'k1':
-                    // Keyword in plaintext alphabet, shifted
-                    const keywordPlain = createAlphabet(keyword, shift);
+                    // K1: Keyword in plaintext alphabet (shifted), random cipher alphabet
+                    plainAlphabet = createKeywordAlphabet(keyword, shift);
                     cipherAlphabet = alphabet.split('').sort(() => Math.random() - 0.5).join('');
                     break;
                 case 'k2':
-                    // Keyword in ciphertext alphabet, shifted
-                    cipherAlphabet = createAlphabet(keyword, shift);
+                    // K2: Normal plaintext alphabet, keyword in cipher alphabet (shifted)
+                    plainAlphabet = alphabet;
+                    cipherAlphabet = createKeywordAlphabet(keyword, shift);
                     break;
                 case 'k3':
-                    // Keyword in both alphabets, both shifted
-                    const plainKeyword = createAlphabet(keyword, shift);
-                    cipherAlphabet = createAlphabet(keyword, (shift + Math.floor(Math.random() * 24) + 1) % 26);
+                    // K3: Keyword in both alphabets (different shifts)
+                    const shift2 = (shift + Math.floor(Math.random() * 24) + 1) % 26;
+                    plainAlphabet = createKeywordAlphabet(keyword, shift);
+                    cipherAlphabet = createKeywordAlphabet(keyword, shift2);
                     break;
             }
             
-            // Create mapping ensuring no self-mapping
+            // Create mapping
             const mapping = {};
             for (let i = 0; i < 26; i++) {
                 mapping[plainAlphabet[i]] = cipherAlphabet[i];
-                // Check for self-mapping and fix it
+            }
+            
+            // Ensure no self-mapping by swapping if necessary
+            for (let i = 0; i < 26; i++) {
                 if (plainAlphabet[i] === cipherAlphabet[i]) {
-                    // Swap with next position
-                    const nextIndex = (i + 1) % 26;
-                    [cipherAlphabet[i], cipherAlphabet[nextIndex]] = [cipherAlphabet[nextIndex], cipherAlphabet[i]];
+                    // Find another position to swap with
+                    let swapIndex = (i + 1) % 26;
+                    while (swapIndex === i || plainAlphabet[swapIndex] === cipherAlphabet[swapIndex]) {
+                        swapIndex = (swapIndex + 1) % 26;
+                    }
+                    // Swap in cipher alphabet
+                    const temp = cipherAlphabet[i];
+                    cipherAlphabet = cipherAlphabet.substring(0, i) + cipherAlphabet[swapIndex] + 
+                                   cipherAlphabet.substring(i + 1, swapIndex) + temp + 
+                                   cipherAlphabet.substring(swapIndex + 1);
+                    
+                    // Update mapping
                     mapping[plainAlphabet[i]] = cipherAlphabet[i];
-                    mapping[plainAlphabet[nextIndex]] = cipherAlphabet[nextIndex];
+                    mapping[plainAlphabet[swapIndex]] = cipherAlphabet[swapIndex];
                 }
             }
+            
+            logDebug(`Plain alphabet: ${plainAlphabet}`);
+            logDebug(`Cipher alphabet: ${cipherAlphabet}`);
             
             return mapping;
         }
@@ -531,6 +646,16 @@
             return frequencies;
         }
 
+        function getSelectedKeyMethod() {
+            const radios = document.querySelectorAll('input[name="keyMethod"]');
+            for (let radio of radios) {
+                if (radio.checked) {
+                    return radio.value;
+                }
+            }
+            return 'random';
+        }
+
         function generateNewProblem() {
             if (!filesLoaded) {
                 logDebug('Files not loaded yet, waiting...');
@@ -544,10 +669,12 @@
             currentPlaintext = quote.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
             
             // Generate cipher mapping based on selected method
-            const method = document.getElementById('keyMethod').value;
+            const method = getSelectedKeyMethod();
+            currentMethod = method;
             
             if (method === 'random') {
                 cipherMapping = generateRandomMapping();
+                currentKeyword = '';
             } else {
                 cipherMapping = generateKeywordMapping(method);
             }
@@ -567,53 +694,88 @@
             logDebug(`Plaintext: "${currentPlaintext}"`);
             logDebug(`Ciphertext: "${currentCiphertext}"`);
             logDebug('Cipher mapping:', cipherMapping);
+            if (currentKeyword) {
+                logDebug(`Keyword: ${currentKeyword}`);
+            }
             
             updateDisplay();
+        }
+
+        function wrapTextIntoLines(text, maxWidth = 800) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = [];
+            let currentWidth = 0;
+            const charWidth = 30; // Approximate width per character including spacing
+            
+            for (let word of words) {
+                const wordWidth = word.length * charWidth;
+                
+                if (currentWidth + wordWidth > maxWidth && currentLine.length > 0) {
+                    lines.push(currentLine.join(' '));
+                    currentLine = [word];
+                    currentWidth = wordWidth;
+                } else {
+                    currentLine.push(word);
+                    currentWidth += wordWidth + (currentLine.length > 1 ? charWidth : 0); // Add space width
+                }
+            }
+            
+            if (currentLine.length > 0) {
+                lines.push(currentLine.join(' '));
+            }
+            
+            return lines;
         }
 
         function updateDisplay() {
             const cipherSection = document.getElementById('cipherSection');
             cipherSection.innerHTML = '';
             
-            // Create a single line with the entire cipher text
-            const textLine = document.createElement('div');
-            textLine.className = 'cipher-text-line';
+            // Wrap text into lines to prevent word breaking
+            const lines = wrapTextIntoLines(currentCiphertext);
             
-            for (let i = 0; i < currentCiphertext.length; i++) {
-                const char = currentCiphertext[i];
+            lines.forEach((line, lineIndex) => {
+                const textLine = document.createElement('div');
+                textLine.className = 'cipher-text-line';
                 
-                if (char === ' ') {
-                    // Add space marker
-                    const spaceDiv = document.createElement('div');
-                    spaceDiv.className = 'space-marker';
-                    spaceDiv.innerHTML = '&nbsp;';
-                    textLine.appendChild(spaceDiv);
-                } else if (char.match(/[A-Z]/)) {
-                    // Add cipher letter with input box
-                    const pairDiv = document.createElement('div');
-                    pairDiv.className = 'cipher-pair';
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
                     
-                    const cipherDiv = document.createElement('div');
-                    cipherDiv.className = 'cipher-letter';
-                    cipherDiv.textContent = char;
-                    
-                    const answerInput = document.createElement('input');
-                    answerInput.type = 'text';
-                    answerInput.className = 'answer-box';
-                    answerInput.maxLength = 1;
-                    answerInput.dataset.cipher = char;
-                    answerInput.dataset.position = i;
-                    
-                    answerInput.addEventListener('input', handleAnswerInput);
-                    answerInput.addEventListener('keydown', handleKeyDown);
-                    
-                    pairDiv.appendChild(cipherDiv);
-                    pairDiv.appendChild(answerInput);
-                    textLine.appendChild(pairDiv);
+                    if (char === ' ') {
+                        // Add space marker
+                        const spaceDiv = document.createElement('div');
+                        spaceDiv.className = 'space-marker';
+                        spaceDiv.innerHTML = '&nbsp;';
+                        textLine.appendChild(spaceDiv);
+                    } else if (char.match(/[A-Z]/)) {
+                        // Add cipher letter with input box
+                        const pairDiv = document.createElement('div');
+                        pairDiv.className = 'cipher-pair';
+                        
+                        const cipherDiv = document.createElement('div');
+                        cipherDiv.className = 'cipher-letter';
+                        cipherDiv.textContent = char;
+                        
+                        const answerInput = document.createElement('input');
+                        answerInput.type = 'text';
+                        answerInput.className = 'answer-box';
+                        answerInput.maxLength = 1;
+                        answerInput.dataset.cipher = char;
+                        answerInput.dataset.position = `${lineIndex}-${i}`;
+                        
+                        answerInput.addEventListener('input', handleAnswerInput);
+                        answerInput.addEventListener('keydown', handleKeyDown);
+                        
+                        pairDiv.appendChild(cipherDiv);
+                        pairDiv.appendChild(answerInput);
+                        textLine.appendChild(pairDiv);
+                    }
                 }
-            }
+                
+                cipherSection.appendChild(textLine);
+            });
             
-            cipherSection.appendChild(textLine);
             updateFrequencyTable();
         }
 
@@ -675,119 +837,4 @@
             
             for (let i = 0; i < 26; i++) {
                 const letter = alphabet[i];
-                const count = letterFrequencies[letter] || 0;
-                
-                const entryDiv = document.createElement('div');
-                entryDiv.className = 'freq-entry';
-                
-                const cipherDiv = document.createElement('div');
-                cipherDiv.className = 'freq-cipher';
-                cipherDiv.textContent = letter;
-                
-                const countDiv = document.createElement('div');
-                countDiv.className = 'freq-count';
-                countDiv.textContent = count;
-                
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'freq-input';
-                input.maxLength = 1;
-                input.dataset.freqCipher = letter;
-                
-                input.addEventListener('input', (e) => {
-                    const value = e.target.value.toUpperCase();
-                    if (value.match(/[A-Z]/)) {
-                        e.target.value = value;
-                        
-                        // Update all corresponding boxes in main cipher
-                        const allBoxes = document.querySelectorAll(`input[data-cipher="${letter}"]`);
-                        allBoxes.forEach(box => {
-                            box.value = value;
-                        });
-                    } else {
-                        e.target.value = '';
-                    }
-                });
-                
-                entryDiv.appendChild(cipherDiv);
-                entryDiv.appendChild(countDiv);
-                entryDiv.appendChild(input);
-                freqTable.appendChild(entryDiv);
-            }
-        }
-
-        function checkAnswer() {
-            const inputs = document.querySelectorAll('.answer-box');
-            let correct = 0;
-            let total = 0;
-            
-            inputs.forEach(input => {
-                const cipherLetter = input.dataset.cipher;
-                const correctPlain = reverseMapping[cipherLetter];
-                
-                if (correctPlain) {
-                    total++;
-                    if (input.value.toUpperCase() === correctPlain) {
-                        input.style.backgroundColor = '#d4edda';
-                        input.style.borderColor = '#28a745';
-                        correct++;
-                    } else {
-                        input.style.backgroundColor = '#f8d7da';
-                        input.style.borderColor = '#dc3545';
-                    }
-                }
-            });
-            
-            const score = total > 0 ? Math.round((correct / total) * 100) : 0;
-            showStatus(`Score: ${score}% (${correct}/${total} correct)`, score === 100 ? 'success' : 'warning');
-            
-            // Reset colors after a delay
-            setTimeout(() => {
-                inputs.forEach(input => {
-                    input.style.backgroundColor = '';
-                    input.style.borderColor = '';
-                });
-            }, 3000);
-        }
-
-        function showSolution() {
-            const inputs = document.querySelectorAll('.answer-box');
-            inputs.forEach(input => {
-                const cipherLetter = input.dataset.cipher;
-                const correctPlain = reverseMapping[cipherLetter];
-                if (correctPlain) {
-                    input.value = correctPlain;
-                }
-            });
-            
-            // Also update frequency table
-            const freqInputs = document.querySelectorAll('.freq-input');
-            freqInputs.forEach(input => {
-                const cipherLetter = input.dataset.freqCipher;
-                const correctPlain = reverseMapping[cipherLetter];
-                if (correctPlain) {
-                    input.value = correctPlain;
-                }
-            });
-            
-            showStatus('Solution revealed!', 'success');
-        }
-
-        function clearAnswer() {
-            const inputs = document.querySelectorAll('.answer-box, .freq-input');
-            inputs.forEach(input => {
-                input.value = '';
-                input.style.backgroundColor = '';
-                input.style.borderColor = '';
-            });
-            showStatus('Answer cleared!', 'success');
-        }
-
-        // Initialize on load
-        window.addEventListener('load', () => {
-            logDebug('Page loaded, starting initialization...');
-            loadFiles();
-        });
-    </script>
-</body>
-</html>
+                const count = letter
