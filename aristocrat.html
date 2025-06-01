@@ -514,22 +514,22 @@
             generateNewProblem();
         }
 
-        function createKeywordAlphabet(keyword, shift = 0) {
+       function createKeywordAlphabet(keyword, shift = 0) {
             const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            // Remove duplicates from keyword
+            // Remove duplicates from keyword and keep only letters
             const uniqueKeyword = [...new Set(keyword.toUpperCase().split(''))].filter(c => /[A-Z]/.test(c));
             // Get remaining letters not in keyword
             const remaining = alphabet.split('').filter(c => !uniqueKeyword.includes(c));
             // Combine keyword + remaining letters
-            let combined = uniqueKeyword.concat(remaining);
+            let keywordAlphabet = uniqueKeyword.concat(remaining).join('');
             
             // Apply shift if specified
             if (shift > 0) {
                 const shiftAmount = shift % 26;
-                combined = combined.slice(shiftAmount).concat(combined.slice(0, shiftAmount));
+                keywordAlphabet = keywordAlphabet.slice(shiftAmount) + keywordAlphabet.slice(0, shiftAmount);
             }
             
-            return combined.join('');
+            return keywordAlphabet;
         }
 
         function generateRandomMapping() {
