@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Columnar Cipher Encoder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f4fc;
+      padding: 20px;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    .title {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .cipher-output, .crib-output, .feedback {
+      font-size: 18px;
+      margin-bottom: 10px;
+      background: #e6e9f0;
+      padding: 10px;
+      border-radius: 6px;
+      word-wrap: break-word;
+    }
+    .feedback.success { color: green; }
+    .feedback.fail { color: red; }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #357edd;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #265bb8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">Columnar Cipher Challenge</div>
+    <button onclick="loadAndEncode()">Generate Cipher</button>
+    <div class="crib-output" id="cribHint"></div>
+    <div class="cipher-output" id="cipherText"></div>
+
+    <input type="text" id="userGuess" placeholder="Type the decoded quote here..." />
+    <button onclick="checkGuess()">Submit Guess</button>
+    <div class="feedback" id="feedbackMessage"></div>
+  </div>
+
+  <script>
+    let originalQuote = "";
+    let startTime = null;
+
+    async function loadAndEncode() {
+      try {
+        const response = await fetch('quotes.json');
+        const quotes = await response.json();
+
+        const selected = quotes[Math.floor(Math.random() * quotes.length)];
+        originalQuote = selected.Quote || selected.quote || "";
+
+        if (!originalQuote) {
+          alert("Quote field is missing or malformed.");
+          return;
+        }
+
+        encodeColumnarCipher(originalQuote);
+        document.getElementById("feedbackMessage").textContent = "";
+        document.getElementById("userGuess").value = "";
+        startTime = new Date();
+      } catch (err) {
+        alert("Error loading quotes.json.");
+        console.error(err);
+      }
+    }
+
+    function getFactors(n) {
+      let factors = [];
+      for (let i = 2; i <= Math.min(n, 9); i++) {
+        if (n % i === 0) factors.push(i);
+      }
+      return factors;
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function encodeColumnarCipher(quote) {
+      const cleaned = quote.toUpperCase().replace(/[^A-Z]/g, "");
+      let padded = cleaned + "XXXX";
+      let factors = getFactors(padded.length);
+      while (factors.length === 0) {
+        padded += "X";
+        factors = getFactors(padded.length);
+      }
+
+      const cols = factors[Math.floor(Math.random() * factors.length)];
+      const rows = Math.ceil(padded.length / cols);
+
+      let matrix = Array.from({ length: rows }, (_, r) =>
+        padded.slice(r * cols, (r + 1) * cols).split('')
+      );
+
+      let columns = [];
+      for (let c = 0; c < cols; c++) {
+        let col = [];
+        for (let r = 0; r < rows; r++) {
+          col.push(matrix[r][c] || "X");
+        }
+        columns.push(col.join(''));
+      }
+
+      const shuffled = shuffleArray(columns.slice());
+      const cipher = shuffled.join('');
+
+      const crib = cleaned.slice(0, 5);
+      document.getElementById("cribHint").innerText = "Crib Hint: " + crib;
+      document.getElementById("cipherText").innerText = cipher;
+    }
+
+    function checkGuess() {
+      const guess = document.getElementById("userGuess").value.trim().replace(/[^a-zA-Z]/g, "").toUpperCase();
+      const cleanedOriginal = originalQuote.trim().replace(/[^a-zA-Z]/g, "").toUpperCase();
+
+      if (guess === cleanedOriginal) {
+        const endTime = new Date();
+        const seconds = Math.round((endTime - startTime) / 1000);
+        document.getElementById("feedbackMessage").textContent = `🎉 Correct! You solved it in ${seconds} seconds.`;
+        document.getElementById("feedbackMessage").className = "feedback success";
+      } else {
+        document.getElementById("feedbackMessage").textContent = "❌ Incorrect. Try again.";
+        document.getElementById("feedbackMessage").className = "feedback fail";
+        document.getElementById("userGuess").value = "";
+      }
+    }
+  </script>
+</body>
+</html>
