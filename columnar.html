@@ -72,7 +72,7 @@
     async function loadAndEncode() {
       try {
         const response = await fetch('quotes.txt');
-        const quotes = await response.json();
+        const quotes = await response.txt();
 
         const selected = quotes[Math.floor(Math.random() * quotes.length)];
         originalQuote = selected.Quote || selected.quote || "";
