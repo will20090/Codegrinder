@@ -71,7 +71,7 @@
 
     async function loadAndEncode() {
       try {
-        const response = await fetch('quotes.json');
+        const response = await fetch('quotes.txt');
         const quotes = await response.json();
 
         const selected = quotes[Math.floor(Math.random() * quotes.length)];
@@ -87,7 +87,7 @@
         document.getElementById("userGuess").value = "";
         startTime = new Date();
       } catch (err) {
-        alert("Error loading quotes.json.");
+        alert("Error loading quotes.txt.");
         console.error(err);
       }
     }
