@@ -345,7 +345,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔤 Aristocrat Cipher</h1>
+            <h1>Aristocrat Cipher Practice</h1>
         </div>
         
         <div class="content">
@@ -422,12 +422,9 @@
         let currentKeyword = '';
         let currentMethod = '';
         let currentShift = 0;
-        let quotes = [];
-        let words = [];
-        let filesLoaded = false;
 
-        // Default data as fallback
-        const defaultQuotes = [
+        // Default quotes and words
+        const quotes = [
             "The quick brown fox jumps over the lazy dog.",
             "To be or not to be, that is the question.",
             "All that glitters is not gold.",
@@ -441,20 +438,23 @@
             "Better late than never but never late is better.",
             "Where there is a will there is a way.",
             "Practice makes perfect but nobody is perfect.",
-            "Life is what happens when you are busy making other plans."
+            "Life is what happens when you are busy making other plans.",
+            "Fortune favors the bold and prepared mind.",
+            "Rome was not built in a day.",
+            "When in Rome do as the Romans do.",
+            "The early bird catches the worm.",
+            "A picture is worth a thousand words.",
+            "Beauty is in the eye of the beholder."
         ];
         
-        const defaultWords = [
+        const words = [
             "ARGENTINA", "BUTTERFLY", "COMPUTER", "ELEPHANT", "FREEDOM",
             "GOVERNMENT", "HOSPITAL", "INTERNET", "JUSTICE", "KEYBOARD", 
             "LIBERTY", "MOUNTAIN", "NEIGHBOR", "OPPOSITE", "PATIENCE", 
             "QUESTION", "REPUBLIC", "STRENGTH", "TOGETHER", "UNIVERSE", 
-            "VICTORY", "WONDERFUL", "EXAMPLE", "BUILDING", "CHANNEL"
+            "VICTORY", "WONDERFUL", "EXAMPLE", "BUILDING", "CHANNEL",
+            "DEMOCRACY", "EDUCATION", "FANTASTIC", "GREENHOUSE", "HARMONY"
         ];
-
-        function logDebug(message) {
-            console.log(message);
-        }
 
         function showStatus(message, type) {
             const statusEl = document.getElementById('statusMessage');
@@ -467,54 +467,6 @@
             }, 5000);
         }
 
-        async function loadFiles() {
-            logDebug('Starting file loading process...');
-            
-            // Initialize with defaults first
-             const quotesUrl = 'https://raw.githubusercontent.com/will20090/Codegrinder/main/quotes.txt';
-            const wordsUrl = 'https://raw.githubusercontent.com/will20090/Codegrinder/main/words.txt';
-            
-            try {
-                // Try to load quotes.txt
-                const quotesResponse = await fetch('quotes.txt');
-                if (quotesResponse.ok) {
-                    const quotesText = await quotesResponse.text();
-                    const loadedQuotes = quotesText
-                        .split(/[\r\n]+/)
-                        .map(quote => quote.trim())
-                        .filter(quote => quote.length > 20);
-                    
-                    if (loadedQuotes.length > 0) {
-                        quotes = loadedQuotes;
-                        logDebug(`Successfully loaded ${quotes.length} quotes from file`);
-                    }
-                }
-
-                // Try to load words.txt
-                const wordsResponse = await fetch('words.txt');
-                if (wordsResponse.ok) {
-                    const wordsText = await wordsResponse.text();
-                    const loadedWords = wordsText
-                        .split(/[\r\n]+/)
-                        .map(word => word.trim().toUpperCase())
-                        .filter(word => word.length >= 4 && /^[A-Z]+$/.test(word));
-                    
-                    if (loadedWords.length > 0) {
-                        words = loadedWords;
-                        logDebug(`Successfully loaded ${words.length} words from file`);
-                    }
-                }
-
-                showStatus('Files loaded successfully!', 'success');
-            } catch (error) {
-                logDebug(`Error loading files: ${error.message}`);
-                showStatus('Using default data - files not found', 'warning');
-            }
-
-            filesLoaded = true;
-            generateNewProblem();
-        }
-
         // Rotate array elements to the right
         function rotateArray(arr, positions) {
             const len = arr.length;
@@ -524,7 +476,7 @@
             return arr.slice(-normalizedPositions).concat(arr.slice(0, -normalizedPositions));
         }
 
-        // Generate K1 cipher using Java logic
+        // Generate K1 cipher
         function generateK1Cipher(keyword) {
             const cipher = new Map();
             const plaintextAlphabet = [];
@@ -550,50 +502,9 @@
                 cipherAlphabet.push(String.fromCharCode(c));
             }
             
-            // Apply rotation
+            // Apply rotation and fix self-mappings
             const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
-            
-            // Check for self-mappings and fix them
-            for (let i = 0; i < 26; i++) {
-                if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                    // Swap with next position
-                    const swapIndex = (i + 1) % 26;
-                    const temp = rotatedCipher[swapIndex];
-                    rotatedCipher[swapIndex] = rotatedCipher[i];
-                    rotatedCipher[i] = temp;
-                    
-                    // Check if swap created another self-mapping
-                    if (plaintextAlphabet[swapIndex] === rotatedCipher[swapIndex]) {
-                        const nextIndex = (swapIndex + 1) % 26;
-                        const temp2 = rotatedCipher[nextIndex];
-                        rotatedCipher[nextIndex] = rotatedCipher[swapIndex];
-                        rotatedCipher[swapIndex] = temp2;
-                    }
-                }
-            }
-            
-            // Final check to ensure no self-mappings
-            let needFixing;
-            do {
-                needFixing = false;
-                for (let i = 0; i < 26; i++) {
-                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                        needFixing = true;
-                        // Find a position that doesn't create self-mapping
-                        for (let j = 0; j < 26; j++) {
-                            if (i !== j && 
-                                plaintextAlphabet[j] !== rotatedCipher[i] && 
-                                plaintextAlphabet[i] !== rotatedCipher[j]) {
-                                // Swap them
-                                const temp = rotatedCipher[j];
-                                rotatedCipher[j] = rotatedCipher[i];
-                                rotatedCipher[i] = temp;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } while (needFixing);
+            fixSelfMappings(plaintextAlphabet, rotatedCipher);
             
             // Create the final mapping
             for (let i = 0; i < 26; i++) {
@@ -603,7 +514,7 @@
             return cipher;
         }
 
-        // Generate K2 cipher using Java logic
+        // Generate K2 cipher
         function generateK2Cipher(keyword) {
             const cipher = new Map();
             const plaintextAlphabet = [];
@@ -616,80 +527,25 @@
             const cipherAlphabet = [];
             const used = new Set();
             
-            // Clean keyword - remove duplicates
-            const cleanKeyword = [];
+            // Add keyword letters first
             for (const c of keyword.toUpperCase()) {
                 if (/[A-Z]/.test(c) && !used.has(c)) {
-                    cleanKeyword.push(c);
+                    cipherAlphabet.push(c);
                     used.add(c);
                 }
             }
-            used.clear();
             
-            let keyIndex = 0;
-            let alphabetIndex = 0;
-            
-            // Build cipher alphabet: keyword first, then remaining letters
-            while (cipherAlphabet.length < 26) {
-                if (keyIndex < cleanKeyword.length) {
-                    const k = cleanKeyword[keyIndex++];
-                    if (!used.has(k)) {
-                        cipherAlphabet.push(k);
-                        used.add(k);
-                    }
-                }
-                
-                while (alphabetIndex < 26 && cipherAlphabet.length < 26) {
-                    const a = String.fromCharCode(65 + alphabetIndex++);
-                    if (!used.has(a)) {
-                        cipherAlphabet.push(a);
-                        used.add(a);
-                        break;
-                    }
+            // Add remaining letters
+            for (let c = 65; c <= 90; c++) {
+                const char = String.fromCharCode(c);
+                if (!used.has(char)) {
+                    cipherAlphabet.push(char);
                 }
             }
             
-            // Apply rotation
+            // Apply rotation and fix self-mappings
             const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
-            
-            // Fix self-mappings
-            for (let i = 0; i < 26; i++) {
-                if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                    // Find a position that doesn't have self-mapping
-                    for (let j = 0; j < 26; j++) {
-                        if (i !== j && plaintextAlphabet[j] !== rotatedCipher[j]) {
-                            // Swap them
-                            const temp = rotatedCipher[j];
-                            rotatedCipher[j] = rotatedCipher[i];
-                            rotatedCipher[i] = temp;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Final check to ensure no self-mappings
-            let needFixing;
-            do {
-                needFixing = false;
-                for (let i = 0; i < 26; i++) {
-                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                        needFixing = true;
-                        // Find a position that doesn't create self-mapping after fixes
-                        for (let j = 0; j < 26; j++) {
-                            if (i !== j && 
-                                plaintextAlphabet[j] !== rotatedCipher[i] && 
-                                plaintextAlphabet[i] !== rotatedCipher[j]) {
-                                // Swap them
-                                const temp = rotatedCipher[j];
-                                rotatedCipher[j] = rotatedCipher[i];
-                                rotatedCipher[i] = temp;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } while (needFixing);
+            fixSelfMappings(plaintextAlphabet, rotatedCipher);
             
             // Create the final mapping
             for (let i = 0; i < 26; i++) {
@@ -699,7 +555,7 @@
             return cipher;
         }
 
-        // Generate K3 cipher using Java logic
+        // Generate K3 cipher
         function generateK3Cipher(keyword) {
             const cipher = new Map();
             const plaintextAlphabet = [];
@@ -724,47 +580,9 @@
             // For K3, cipher alphabet is plaintext alphabet REVERSED
             const cipherAlphabet = [...plaintextAlphabet].reverse();
             
-            // Apply rotation
+            // Apply rotation and fix self-mappings
             const rotatedCipher = rotateArray(cipherAlphabet, currentShift);
-            
-            // Fix self-mappings
-            for (let i = 0; i < 26; i++) {
-                if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                    // Find a position that doesn't have self-mapping
-                    for (let j = 0; j < 26; j++) {
-                        if (i !== j && plaintextAlphabet[j] !== rotatedCipher[j]) {
-                            // Swap them
-                            const temp = rotatedCipher[j];
-                            rotatedCipher[j] = rotatedCipher[i];
-                            rotatedCipher[i] = temp;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Final check to ensure no self-mappings
-            let needFixing;
-            do {
-                needFixing = false;
-                for (let i = 0; i < 26; i++) {
-                    if (plaintextAlphabet[i] === rotatedCipher[i]) {
-                        needFixing = true;
-                        // Find a position that doesn't create self-mapping after fixes
-                        for (let j = 0; j < 26; j++) {
-                            if (i !== j && 
-                                plaintextAlphabet[j] !== rotatedCipher[i] && 
-                                plaintextAlphabet[i] !== rotatedCipher[j]) {
-                                // Swap them
-                                const temp = rotatedCipher[j];
-                                rotatedCipher[j] = rotatedCipher[i];
-                                rotatedCipher[i] = temp;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } while (needFixing);
+            fixSelfMappings(plaintextAlphabet, rotatedCipher);
             
             // Create the final mapping
             for (let i = 0; i < 26; i++) {
@@ -774,6 +592,45 @@
             return cipher;
         }
 
+        function fixSelfMappings(plaintext, cipher) {
+            // Fix self-mappings by swapping
+            for (let i = 0; i < 26; i++) {
+                if (plaintext[i] === cipher[i]) {
+                    // Find a position that doesn't have self-mapping
+                    for (let j = 0; j < 26; j++) {
+                        if (i !== j && plaintext[j] !== cipher[j]) {
+                            // Swap them
+                            const temp = cipher[j];
+                            cipher[j] = cipher[i];
+                            cipher[i] = temp;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Final cleanup pass
+            let needFixing;
+            do {
+                needFixing = false;
+                for (let i = 0; i < 26; i++) {
+                    if (plaintext[i] === cipher[i]) {
+                        needFixing = true;
+                        for (let j = 0; j < 26; j++) {
+                            if (i !== j && 
+                                plaintext[j] !== cipher[i] && 
+                                plaintext[i] !== cipher[j]) {
+                                const temp = cipher[j];
+                                cipher[j] = cipher[i];
+                                cipher[i] = temp;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } while (needFixing);
+        }
+
         function generateRandomMapping() {
             const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             const shuffled = alphabet.split('').sort(() => Math.random() - 0.5);
@@ -781,7 +638,6 @@
             // Ensure no self-mapping
             for (let i = 0; i < 26; i++) {
                 if (alphabet[i] === shuffled[i]) {
-                    // Find a different position to swap with
                     let swapIndex = (i + 1) % 26;
                     while (swapIndex === i || alphabet[swapIndex] === shuffled[swapIndex]) {
                         swapIndex = (swapIndex + 1) % 26;
@@ -828,13 +684,6 @@
         }
 
         function generateNewProblem() {
-            if (!filesLoaded) {
-                logDebug('Files not loaded yet, waiting...');
-                return;
-            }
-
-            logDebug('Generating new aristocrat problem...');
-
             // Select random quote
             const quote = quotes[Math.floor(Math.random() * quotes.length)];
             currentPlaintext = quote.replace(/[^a-zA-Z\s]/g, '').toUpperCase();
@@ -851,8 +700,8 @@
                 // Select random keyword
                 const keyword = words[Math.floor(Math.random() * words.length)];
                 currentKeyword = keyword;
-            }
-            if (method === 'k1') {
+                
+                if (method === 'k1') {
                     cipherMapping = generateK1Cipher(keyword);
                 } else if (method === 'k2') {
                     cipherMapping = generateK2Cipher(keyword);
@@ -886,7 +735,6 @@
             displayCipher();
             displayFrequencyTable();
             
-            logDebug(`Generated ${method} cipher with keyword: ${currentKeyword}`);
             showStatus('New problem generated!', 'success');
         }
 
@@ -1017,147 +865,4 @@
             }
         }
 
-        function fillMatchingLetters(cipherLetter, plainLetter) {
-            // Fill all cipher inputs
-            const cipherInputs = document.querySelectorAll(`.answer-box[data-cipher="${cipherLetter}"]`);
-            cipherInputs.forEach(input => {
-                input.value = plainLetter;
-            });
-            
-            // Fill frequency table input
-            const freqInput = document.querySelector(`.freq-input[data-cipher="${cipherLetter}"]`);
-            if (freqInput) {
-                freqInput.value = plainLetter;
-            }
-        }
-
-        function handleKeyNavigation(event) {
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-                const inputs = Array.from(document.querySelectorAll('.answer-box'));
-                const currentIndex = inputs.indexOf(event.target);
-                
-                if (event.key === 'ArrowRight' && currentIndex < inputs.length - 1) {
-                    inputs[currentIndex + 1].focus();
-                } else if (event.key === 'ArrowLeft' && currentIndex > 0) {
-                    inputs[currentIndex - 1].focus();
-                }
-            }
-        }
-
-        function checkAnswer() {
-            const inputs = document.querySelectorAll('.answer-box');
-            let correct = 0;
-            let total = 0;
-            
-            inputs.forEach(input => {
-                const cipherLetter = input.dataset.cipher;
-                const userAnswer = input.value.toUpperCase();
-                const correctAnswer = reverseMapping[cipherLetter];
-                
-                total++;
-                if (userAnswer === correctAnswer) {
-                    correct++;
-                    input.style.backgroundColor = '#d4edda';
-                    input.style.borderColor = '#28a745';
-                } else if (userAnswer) {
-                    input.style.backgroundColor = '#f8d7da';
-                    input.style.borderColor = '#dc3545';
-                } else {
-                    input.style.backgroundColor = 'white';
-                    input.style.borderColor = '#3498db';
-                }
-            });
-            
-            const percentage = Math.round((correct / total) * 100);
-            let message = `${correct}/${total} correct (${percentage}%)`;
-            let type = 'warning';
-            
-            if (percentage === 100) {
-                message += ' - Perfect!';
-                type = 'success';
-            } else if (percentage >= 80) {
-                message += ' - Great job!';
-                type = 'success';
-            } else if (percentage >= 60) {
-                message += ' - Good progress!';
-            } else {
-                message += ' - Keep trying!';
-                type = 'error';
-            }
-            
-            showStatus(message, type);
-        }
-
-        function showSolution() {
-            const inputs = document.querySelectorAll('.answer-box');
-            inputs.forEach(input => {
-                const cipherLetter = input.dataset.cipher;
-                const correctAnswer = reverseMapping[cipherLetter];
-                input.value = correctAnswer;
-                input.style.backgroundColor = '#d1ecf1';
-                input.style.borderColor = '#17a2b8';
-            });
-            
-            const freqInputs = document.querySelectorAll('.freq-input');
-            freqInputs.forEach(input => {
-                const cipherLetter = input.dataset.cipher;
-                const correctAnswer = reverseMapping[cipherLetter];
-                input.value = correctAnswer;
-            });
-            
-            showStatus('Solution revealed!', 'success');
-        }
-
-        function clearAnswer() {
-            const inputs = document.querySelectorAll('.answer-box, .freq-input');
-            inputs.forEach(input => {
-                input.value = '';
-                input.style.backgroundColor = 'white';
-                input.style.borderColor = input.classList.contains('answer-box') ? '#3498db' : '#3498db';
-            });
-            
-            showStatus('Answer cleared!', 'warning');
-        }
-
-        function checkKeyword() {
-            const userKeyword = document.getElementById('keywordInput').value.toUpperCase().trim();
-            
-            if (!userKeyword) {
-                showStatus('Please enter a keyword!', 'error');
-                return;
-            }
-            
-            if (userKeyword === currentKeyword) {
-                showStatus('Correct keyword!', 'success');
-                document.getElementById('keywordInput').style.backgroundColor = '#d4edda';
-                document.getElementById('keywordInput').style.borderColor = '#28a745';
-            } else {
-                showStatus('Incorrect keyword. Try again!', 'error');
-                document.getElementById('keywordInput').style.backgroundColor = '#f8d7da';
-                document.getElementById('keywordInput').style.borderColor = '#dc3545';
-            }
-        }
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            logDebug('Page loaded, initializing...');
-            loadFiles();
-        });
-
-        // Add event listeners for radio buttons
-        document.addEventListener('DOMContentLoaded', function() {
-            const radios = document.querySelectorAll('input[name="keyMethod"]');
-            radios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const keywordGuessEl = document.getElementById('keywordGuess');
-                    if (radio.value !== 'random') {
-                        keywordGuessEl.style.display = 'block';
-                    } else {
-                        keywordGuessEl.style.display = 'none';
-                    }
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+        function fillMatchingLetters(cipherLetter,
