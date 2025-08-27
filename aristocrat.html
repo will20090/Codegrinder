@@ -471,8 +471,8 @@
             logDebug('Starting file loading process...');
             
             // Initialize with defaults first
-            quotes = [...defaultQuotes];
-            words = [...defaultWords];
+             const quotesUrl = 'https://raw.githubusercontent.com/will20090/Codegrinder/main/quotes.txt';
+            const wordsUrl = 'https://raw.githubusercontent.com/will20090/Codegrinder/main/words.txt';
             
             try {
                 // Try to load quotes.txt
