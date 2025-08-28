@@ -394,7 +394,7 @@
             <div class="section">
                 <h2>Cipher Text</h2>
                 <div class="cipher-section" id="cipherSection">
-                    <div class="loading">Loading bruh</div>
+                    <div class="loading">Loading...</div>
                 </div>
             </div>
 
@@ -738,10 +738,16 @@
             showStatus('New problem generated!', 'success');
         }
 
-        function displayCipher() {
-            const container = document.getElementById('cipherSection');
-            container.innerHTML = '';
-            
+           function displayCipher() {
+        const container = document.getElementById('cipherSection');
+        container.innerHTML = '';
+    
+            // Safety check
+            if (!currentCiphertext) {
+                container.innerHTML = '<div class="loading">No cipher text available</div>';
+                return;
+            }
+    
             const words = currentCiphertext.split(/\s+/);
             let currentLine = document.createElement('div');
             currentLine.className = 'cipher-text-line';
