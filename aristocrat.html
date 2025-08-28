@@ -865,7 +865,7 @@
             }
         }
 
-        function fillMatchingLetters(cipherLetter,plainLetter) {
+        function fillMatchingLetters(cipherLetter, plainLetter) {
             // Fill all cipher inputs
             const cipherInputs = document.querySelectorAll(`.answer-box[data-cipher="${cipherLetter}"]`);
             cipherInputs.forEach(input => {
@@ -985,7 +985,7 @@
                 document.getElementById('keywordInput').style.borderColor = '#dc3545';
             }
         }
-            generateNewProblem();
+        
         // Initialize when page loads - THIS IS THE FIX!
         document.addEventListener('DOMContentLoaded', function() {
             // Generate first problem immediately
